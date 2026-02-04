@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ипотека — аннуитет + досрочка (реалтайм)</title>
+  <title>Ипотека — аннуитет + досрочка (A/B + IRR vs вклад)</title>
   <style>
     :root { color-scheme: light; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; background:#f6f7f9; color:#111; }
-    .wrap { max-width: 1180px; margin: 24px auto; padding: 0 16px 48px; }
+    .wrap { max-width: 1220px; margin: 24px auto; padding: 0 16px 48px; }
     h1 { margin: 0 0 8px; font-size: 22px; }
     .muted { color:#666; font-size: 13px; line-height: 1.35; }
-    .grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 16px; margin-top: 16px; }
+    .grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 16px; margin-top: 16px; }
     @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
     .card { background:#fff; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.06); padding: 16px; }
     .card h2 { margin: 0 0 12px; font-size: 16px; }
@@ -31,7 +31,7 @@
     .kpi .box { border:1px solid #eef1f5; border-radius: 12px; padding: 12px; background:#fbfcfe; }
     .kpi .box .t { font-size: 12px; color:#555; }
     .kpi .box .v { font-size: 18px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
-    .kpi .box .s { font-size: 12px; color:#666; margin-top: 4px; }
+    .kpi .box .s { font-size: 12px; color:#666; margin-top: 4px; line-height: 1.3; }
     .hr { height:1px; background:#eef1f5; margin: 16px 0; }
     table { width:100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
     th, td { padding: 10px 8px; border-bottom:1px solid #eef1f5; text-align: right; font-size: 12px; }
@@ -49,14 +49,14 @@
     @media (max-width: 760px){ .two{ grid-template-columns: 1fr; } }
 
     .chartWrap { position: relative; }
-    canvas { width:100%; height: 160px; border:1px solid #eef1f5; border-radius: 12px; background:#fff; }
+    canvas { width:100%; height: 170px; border:1px solid #eef1f5; border-radius: 12px; background:#fff; }
     .tooltip {
       position:absolute; pointer-events:none; z-index: 10;
       background: rgba(17,17,17,0.92); color:#fff;
       padding: 10px 10px; border-radius: 10px;
       font-size: 12px; line-height: 1.35;
       transform: translate(10px, -10px);
-      max-width: 280px;
+      max-width: 310px;
       box-shadow: 0 8px 16px rgba(0,0,0,.18);
       display:none;
       white-space: nowrap;
@@ -69,19 +69,34 @@
     }
     .effGrid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 760px){ .effGrid{ grid-template-columns: 1fr; } }
+    .notice {
+      border-radius: 12px;
+      padding: 12px;
+      border:1px solid #eef1f5;
+      background:#fbfcfe;
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .notice.warn { border-color:#ffd9a8; background:#fff7ea; }
+    .notice.ok { border-color:#ccebd1; background:#f1fbf3; }
+    .abGrid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 760px){ .abGrid{ grid-template-columns: 1fr; } }
+    .miniKpi { border:1px solid #eef1f5; background:#fbfcfe; border-radius: 12px; padding: 12px; }
+    .miniKpi h3 { margin:0 0 8px; font-size: 14px; }
+    .mono { font-variant-numeric: tabular-nums; }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <h1>Ипотека (аннуитет) + досрочное погашение</h1>
+    <h1>Ипотека (аннуитет) + досрочка — сценарии A/B + “досрочка vs вклад”</h1>
     <div class="muted">
-      Считает график, переплату по процентам (твоя «ПСК»), срок и эффект разовой/регулярной досрочки.
-      Комиссии/страховки не учитываются. Досрочка: в месяце сначала аннуитет, затем досрочка (в тело).
+      Досрочка: в месяце сначала аннуитет, затем досрочка (в тело). “ПСК” = переплата по процентам. IRR считается по разнице денежных потоков “без тестовой досрочки” vs “с тестовой досрочкой”.
     </div>
 
     <div class="grid">
-      <!-- LEFT: INPUTS -->
+      <!-- LEFT -->
       <div class="card">
         <h2>Параметры кредита</h2>
         <div class="row">
@@ -105,17 +120,34 @@
 
         <div class="hr"></div>
 
-        <h2>Досрочное погашение</h2>
-
+        <h2>Сценарии A/B</h2>
         <div class="row">
           <div>
-            <label>Режим после досрочки</label>
+            <label>Действия</label>
+            <div class="seg">
+              <button id="saveA" class="primary" type="button">Сохранить в A</button>
+              <button id="loadA" type="button">Загрузить A</button>
+            </div>
+            <div class="seg" style="margin-top:8px;">
+              <button id="saveB" class="primary" type="button">Сохранить в B</button>
+              <button id="loadB" type="button">Загрузить B</button>
+            </div>
+            <div class="hint">Сценарий сохраняет: базу кредита + режим + все досрочки.</div>
+          </div>
+          <div>
+            <label>Режим после досрочки (текущий)</label>
             <div class="seg">
               <button id="modeKeepPayment" class="active" type="button">Сохранять платёж → сокращать срок</button>
               <button id="modeKeepTerm" type="button">Сохранять срок → уменьшать платёж</button>
             </div>
-            <div class="hint">В обоих режимах досрочка уходит в тело кредита (principal).</div>
+            <div class="hint">Этот режим тоже часть сценария A/B.</div>
           </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>Досрочное погашение</h2>
+        <div class="row">
           <div>
             <label>Регулярная досрочка</label>
             <div class="two">
@@ -131,8 +163,8 @@
                 <label class="small">Частота</label>
                 <select id="regFreq">
                   <option value="1">каждый месяц</option>
-                  <option value="3">раз в квартал (каждые 3 мес.)</option>
-                  <option value="12">раз в год (каждые 12 мес.)</option>
+                  <option value="3">раз в квартал</option>
+                  <option value="12">раз в год</option>
                 </select>
               </div>
               <div>
@@ -140,6 +172,12 @@
                 <input id="regEnd" type="number" min="0" step="1" value="0" />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label>Ставка вклада для сравнения (% годовых)</label>
+            <input id="depositRate" type="number" min="0" step="0.1" value="12" />
+            <div class="hint">Будем предупреждать, когда годовая доходность досрочки (IRR) упадёт ниже этой ставки.</div>
           </div>
         </div>
 
@@ -179,8 +217,8 @@
         <div class="effGrid">
           <div class="card" style="padding:12px; box-shadow:none; border:1px solid #eef1f5; background:#fbfcfe;">
             <div class="muted" style="margin-bottom:8px;">
-              Тестируем маржинальный эффект: добавим <b>тестовую досрочку</b> в выбранный месяц и посмотрим,
-              сколько процентов она сэкономит <i>в текущем режиме</i>.
+              Тестируем маржинальный эффект: добавим <b>тестовую досрочку</b> в выбранный месяц (поверх текущих досрочек)
+              и считаем: экономию процентов + IRR (годовых) vs ставка вклада.
             </div>
 
             <div class="row">
@@ -202,34 +240,34 @@
                 <div class="s" id="testSaveNote">—</div>
               </div>
               <div class="box">
-                <div class="t">Эффективность (экономия / сумма)</div>
-                <div class="v" id="testRoi">—</div>
-                <div class="s" id="testTermSave">—</div>
+                <div class="t">Доходность досрочки (IRR, годовых)</div>
+                <div class="v" id="testIrr">—</div>
+                <div class="s" id="testIrrNote">—</div>
               </div>
             </div>
+
+            <div id="irrNotice" class="notice">—</div>
           </div>
 
           <div>
             <div class="muted" style="margin-bottom:8px;">
-              Карта эффективности: сколько процентов сэкономит тестовая сумма, если внести её в каждом месяце.
-              Чем выше линия — тем выгоднее досрочка в этом месяце.
+              Карта по месяцам: 1) экономия процентов (₽) 2) IRR (годовых). Наведи курсор.
             </div>
             <div class="chartWrap">
-              <canvas id="effChart" width="900" height="220"></canvas>
+              <canvas id="effChart" width="900" height="240"></canvas>
               <div id="effTip" class="tooltip"></div>
             </div>
             <div class="hint">
-              <span class="pill">Подсказка</span>
-              Обычно эффективность резко падает со временем: ранняя досрочка “убивает” проценты на много месяцев вперёд.
+              <span class="pill">Смысл</span>
+              Обычно IRR досрочки со временем падает. В какой-то момент вклад может стать “выгоднее по годовым”.
             </div>
           </div>
         </div>
-
       </div>
 
-      <!-- RIGHT: RESULTS -->
+      <!-- RIGHT -->
       <div class="card">
-        <h2>Результаты</h2>
+        <h2>Результаты текущего сценария</h2>
 
         <div class="kpi">
           <div class="box">
@@ -266,21 +304,35 @@
 
         <div class="hr"></div>
 
-        <h2>Графики</h2>
-
-        <div class="muted" style="margin: -6px 0 10px;">
-          1) Остаток долга (заливка показывает разницу). Наведи курсор.
+        <h2>Сравнение сценариев A/B</h2>
+        <div class="abGrid">
+          <div class="miniKpi">
+            <h3>Сценарий A</h3>
+            <div class="small mono" id="abA">Сохрани A, чтобы увидеть метрики.</div>
+          </div>
+          <div class="miniKpi">
+            <h3>Сценарий B</h3>
+            <div class="small mono" id="abB">Сохрани B, чтобы увидеть метрики.</div>
+          </div>
         </div>
+        <div class="hint" id="abDelta">—</div>
+
+        <div class="hr"></div>
+
+        <h2>Графики (baseline / текущий / A / B)</h2>
+        <div class="muted" style="margin: -6px 0 10px;">
+          1) Остаток долга. 2) Накопленные проценты. Наведи курсор.
+        </div>
+
         <div class="chartWrap">
-          <canvas id="balChart" width="900" height="220"></canvas>
+          <canvas id="balChart" width="900" height="240"></canvas>
           <div id="balTip" class="tooltip"></div>
         </div>
 
-        <div class="muted" style="margin: 12px 0 10px;">
-          2) Накопленные проценты (показывает сэкономленные деньги “в динамике”).
-        </div>
+        <div style="height:12px;"></div>
+
         <div class="chartWrap">
-          <canvas id="intChart" width="900" height="220"></canvas>
+          <canvas id="intChart" width="900" height="240"></canvas>
           <div id="intTip" class="tooltip"></div>
         </div>
 
@@ -296,7 +348,7 @@
             </select>
           </div>
           <div style="align-self:end;">
-            <button id="exportCsv" type="button">Экспорт CSV</button>
+            <button id="exportCsv" type="button">Экспорт CSV (текущий)</button>
           </div>
         </div>
 
@@ -318,7 +370,8 @@
         </div>
 
         <div class="hint">
-          «Переплата по %» = сумма всех процентов за период. Округление применяется только при отображении.
+          IRR тестовой досрочки: строим денежные потоки (в момент досрочки “-сумма”, далее каждый месяц “+сколько денег ты НЕ заплатил банку”)
+          и ищем ставку, при которой NPV=0. Это сравнимо со вкладом.
         </div>
       </div>
     </div>
@@ -338,6 +391,12 @@
     if (!isFinite(x)) return "—";
     return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(x);
   };
+  const fmtPct = (x) => {
+    if (!isFinite(x)) return "—";
+    return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(x) + "%";
+  };
+  const clamp = (x,a,b)=>Math.min(Math.max(x,a),b);
+
   const addMonths = (date, m) => {
     const d = new Date(date);
     const day = d.getDate();
@@ -358,11 +417,63 @@
     return P * k;
   }
 
+  // IRR monthly via bisection on NPV
+  // cashflows: [t0, t1, ...] where t0 is at time 0 (month of extra)
+  function irrMonthly(cashflows) {
+    // Need at least one negative and one positive to have meaningful IRR
+    let hasNeg=false, hasPos=false;
+    for (const c of cashflows) { if (c<0) hasNeg=true; if (c>0) hasPos=true; }
+    if (!(hasNeg && hasPos)) return NaN;
+
+    const npv = (r) => {
+      // r is monthly rate
+      let s = 0;
+      let denom = 1;
+      for (let t=0; t<cashflows.length; t++) {
+        if (t===0) denom = 1;
+        else denom *= (1+r);
+        s += cashflows[t] / denom;
+      }
+      return s;
+    };
+
+    // bracket r in [-0.999, high]
+    let lo = -0.999, hi = 2.0; // up to 200% per month
+    let fLo = npv(lo);
+    let fHi = npv(hi);
+
+    // expand hi if needed
+    let expand = 0;
+    while (fLo * fHi > 0 && expand < 30) {
+      hi *= 1.5;
+      fHi = npv(hi);
+      expand++;
+      if (hi > 1e6) break;
+    }
+    if (fLo * fHi > 0) return NaN;
+
+    for (let i=0;i<80;i++){
+      const mid = (lo+hi)/2;
+      const fMid = npv(mid);
+      if (Math.abs(fMid) < 1e-8) return mid;
+      if (fLo * fMid <= 0) { hi = mid; fHi = fMid; }
+      else { lo = mid; fLo = fMid; }
+    }
+    return (lo+hi)/2;
+  }
+
+  function annualizeFromMonthly(rm) {
+    if (!isFinite(rm)) return NaN;
+    return Math.pow(1+rm, 12) - 1;
+  }
+
   // ------------------------------
   // State
   // ------------------------------
   let mode = "keepPayment"; // keepPayment | keepTerm
   let oneTimes = [];
+  let scenarioA = null;
+  let scenarioB = null;
 
   // ------------------------------
   // DOM
@@ -381,11 +492,16 @@
   const regStartEl = el("regStart");
   const regFreqEl = el("regFreq");
   const regEndEl = el("regEnd");
+  const depositRateEl = el("depositRate");
 
   const oneMonthEl = el("oneMonth");
   const oneAmountEl = el("oneAmount");
   const addOneBtn = el("addOne");
   const oneTableBody = el("oneTable").querySelector("tbody");
+
+  const saveA = el("saveA"), loadA = el("loadA");
+  const saveB = el("saveB"), loadB = el("loadB");
+  const abA = el("abA"), abB = el("abB"), abDelta = el("abDelta");
 
   const kpiPayment = el("kpiPayment");
   const kpiPaymentNote = el("kpiPaymentNote");
@@ -417,19 +533,67 @@
   const testMonthLabel = el("testMonthLabel");
   const testSaveEl = el("testSave");
   const testSaveNoteEl = el("testSaveNote");
-  const testRoiEl = el("testRoi");
-  const testTermSaveEl = el("testTermSave");
+  const testIrrEl = el("testIrr");
+  const testIrrNoteEl = el("testIrrNote");
+  const irrNotice = el("irrNotice");
 
   // default start date = today
   startDateEl.value = toISODate(new Date());
 
   // ------------------------------
-  // Extras building
+  // Scenario snapshot
+  // ------------------------------
+  function getCurrentConfig() {
+    return {
+      base: {
+        principal: Number(principalEl.value||0),
+        rate: Number(rateEl.value||0),
+        years: Number(yearsEl.value||0),
+        startDate: String(startDateEl.value||toISODate(new Date()))
+      },
+      mode,
+      regular: {
+        amount: Number(regAmountEl.value||0),
+        start: Number(regStartEl.value||1),
+        freq: Number(regFreqEl.value||1),
+        end: Number(regEndEl.value||0)
+      },
+      oneTimes: JSON.parse(JSON.stringify(oneTimes))
+    };
+  }
+
+  function applyConfig(cfg) {
+    if (!cfg) return;
+    principalEl.value = cfg.base?.principal ?? principalEl.value;
+    rateEl.value = cfg.base?.rate ?? rateEl.value;
+    yearsEl.value = cfg.base?.years ?? yearsEl.value;
+    startDateEl.value = cfg.base?.startDate ?? startDateEl.value;
+
+    mode = cfg.mode || mode;
+    if (mode === "keepPayment") {
+      keepPaymentBtn.classList.add("active");
+      keepTermBtn.classList.remove("active");
+    } else {
+      keepTermBtn.classList.add("active");
+      keepPaymentBtn.classList.remove("active");
+    }
+
+    regAmountEl.value = cfg.regular?.amount ?? regAmountEl.value;
+    regStartEl.value = cfg.regular?.start ?? regStartEl.value;
+    regFreqEl.value = cfg.regular?.freq ?? regFreqEl.value;
+    regEndEl.value = cfg.regular?.end ?? regEndEl.value;
+
+    oneTimes = Array.isArray(cfg.oneTimes) ? JSON.parse(JSON.stringify(cfg.oneTimes)) : oneTimes;
+    renderOneTimes();
+    recalc();
+  }
+
+  // ------------------------------
+  // Extras map
   // ------------------------------
   function buildExtrasMap(nMaxMonths) {
     const map = new Map(); // month -> extra sum
 
-    // one-time
     for (const o of oneTimes) {
       if (!o || !isFinite(o.month) || !isFinite(o.amount)) continue;
       const m = Math.trunc(o.month);
@@ -438,7 +602,6 @@
       map.set(m, (map.get(m) || 0) + a);
     }
 
-    // regular
     const regAmt = Math.max(0, Number(regAmountEl.value || 0));
     const regStart = Math.max(1, Math.trunc(Number(regStartEl.value || 1)));
     const regFreq = Math.max(1, Math.trunc(Number(regFreqEl.value || 1)));
@@ -460,7 +623,7 @@
   }
 
   // ------------------------------
-  // Core amortization simulation
+  // Core simulation
   // ------------------------------
   function simulate({ P0, annualRate, months, startDate, mode, extrasMap }) {
     const r = annualRate / 12;
@@ -474,8 +637,7 @@
 
     const rows = [];
     let m = 0;
-
-    const hardCap = 3000;
+    const hardCap = 4000;
 
     while (balance > 1e-6 && m < hardCap) {
       m++;
@@ -508,7 +670,8 @@
         extra,
         balance: Math.max(0, newBalance),
         cumInterest: totalInterest,
-        cumPaid: totalPaid
+        cumPaid: totalPaid,
+        cashOut: (payThisMonth + extra)
       });
 
       balance = Math.max(0, newBalance);
@@ -526,7 +689,6 @@
     }
 
     const endDate = rows.length ? rows[rows.length - 1].date : addMonths(startDate, 0);
-
     return {
       monthsActual: rows.length,
       endDate,
@@ -538,7 +700,7 @@
   }
 
   // ------------------------------
-  // Rendering helpers
+  // Rendering
   // ------------------------------
   function renderOneTimes() {
     oneTimes.sort((a,b) => a.month - b.month);
@@ -626,26 +788,26 @@
   }
 
   function makeCsv(rows) {
-    const header = ["month","date","payment","interest","principal","extra","balance","cum_interest","cum_paid"];
+    const header = ["month","date","cash_out","payment","extra","interest","principal","balance","cum_interest"];
     const lines = [header.join(",")];
     for (const r of rows) {
       lines.push([
         r.month,
         toISODate(r.date),
+        r.cashOut.toFixed(2),
         r.payment.toFixed(2),
+        r.extra.toFixed(2),
         r.interest.toFixed(2),
         r.principal.toFixed(2),
-        r.extra.toFixed(2),
         r.balance.toFixed(2),
         (r.cumInterest || 0).toFixed(2),
-        (r.cumPaid || 0).toFixed(2),
       ].join(","));
     }
     return lines.join("\n");
   }
 
   // ------------------------------
-  // Charts (canvas) with hover tooltips
+  // Charts utils
   // ------------------------------
   function getCanvasDPR(canvas) {
     const dpr = window.devicePixelRatio || 1;
@@ -658,29 +820,26 @@
     return { dpr, w, h, rect };
   }
 
-  function drawMultiLineChart({
-    canvas, tipEl, titleLeft,
-    seriesA, seriesB, // arrays of numbers
-    labels, // array length n (month numbers)
+  function drawMultiSeriesChart({
+    canvas, tipEl,
+    titleLeft,
+    series, // [{name, values, style: 'solid'|'dash'}...]
     yFormatter,
-    tipBuilder, // (idx) => html
-    fillBetween = false
+    tipBuilder
   }) {
     const ctx = canvas.getContext("2d");
     const { w, h } = getCanvasDPR(canvas);
     const padL = 46, padR = 14, padT = 18, padB = 26;
 
-    const n = Math.max(seriesA.length, seriesB.length, 1);
-    const A = seriesA.slice();
-    const B = seriesB.slice();
-
-    const maxY = Math.max(...A, ...B, 1);
-    const minY = Math.min(...A.filter(Number.isFinite), ...B.filter(Number.isFinite), 0);
+    const maxLen = Math.max(...series.map(s=>s.values.length), 1);
+    const all = series.flatMap(s=>s.values);
+    const maxY = Math.max(...all, 1);
+    const minY = Math.min(...all.filter(Number.isFinite), 0);
 
     const xFor = (i, len) => padL + (w - padL - padR) * (i / Math.max(len - 1, 1));
     const yFor = (v) => (h - padB) - (h - padT - padB) * ((v - minY) / Math.max(maxY - minY, 1e-9));
 
-    // background
+    // bg
     ctx.clearRect(0,0,w,h);
     ctx.fillStyle = "#fff";
     ctx.fillRect(0,0,w,h);
@@ -688,7 +847,6 @@
     // grid
     ctx.strokeStyle = "#eef1f5";
     ctx.lineWidth = 1;
-
     const gridLines = 4;
     for (let g=0; g<=gridLines; g++) {
       const y = padT + (h - padT - padB) * (g / gridLines);
@@ -717,443 +875,31 @@
     ctx.font = `${12 * (window.devicePixelRatio||1)}px -apple-system, Segoe UI, Roboto, Arial`;
     ctx.fillText(titleLeft || "", padL, 12);
 
-    function plot(series, stroke, dash=[]) {
-      ctx.strokeStyle = stroke;
+    // plot
+    function plot(values, dash=[]) {
       ctx.setLineDash(dash);
       ctx.lineWidth = 2;
       ctx.beginPath();
-      for (let i=0; i<series.length; i++){
-        const x = xFor(i, series.length);
-        const y = yFor(series[i]);
+      for (let i=0; i<values.length; i++){
+        const x = xFor(i, values.length);
+        const y = yFor(values[i]);
         if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       }
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
-    // Optional fill between: fill polygon between A and B along common length
-    if (fillBetween) {
-      const len = Math.min(A.length, B.length);
-      ctx.fillStyle = "rgba(17,17,17,0.08)";
-      ctx.beginPath();
-      for (let i=0; i<len; i++){
-        const x = xFor(i, len);
-        const y = yFor(A[i]);
-        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      }
-      for (let i=len-1; i>=0; i--){
-        const x = xFor(i, len);
-        const y = yFor(B[i]);
-        ctx.lineTo(x,y);
-      }
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // baseline solid, scenario dashed
-    plot(A, "#111", []);
-    plot(B, "#111", [7,6]);
-
-    // points arrays for hover (use common length)
-    const len = Math.min(A.length, B.length);
-    const points = new Array(len).fill(0).map((_,i)=>({
-      x: xFor(i, len),
-      yA: yFor(A[i]),
-      yB: yFor(B[i])
-    }));
-
-    // hover handlers
-    function hideTip(){ tipEl.style.display = "none"; }
-    function showTip(x, y, html){
-      tipEl.innerHTML = html;
-      tipEl.style.left = `${x}px`;
-      tipEl.style.top = `${y}px`;
-      tipEl.style.display = "block";
-    }
-
-    function onMove(ev){
-      const rect = canvas.getBoundingClientRect();
-      const mx = ev.clientX - rect.left;
-      const my = ev.clientY - rect.top;
-
-      // find nearest by x
-      const dpr = window.devicePixelRatio || 1;
-      const mxp = mx * dpr;
-      let best = -1, bestDist = Infinity;
-      for (let i=0; i<points.length; i++){
-        const dx = points[i].x - mxp;
-        const dist = Math.abs(dx);
-        if (dist < bestDist) { bestDist = dist; best = i; }
-      }
-      if (best < 0) return;
-
-      // redraw with vertical marker
-      ctx.save();
-      ctx.strokeStyle = "rgba(17,17,17,0.18)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(points[best].x, padT);
-      ctx.lineTo(points[best].x, h - padB);
-      ctx.stroke();
-
-      // marker dots
-      ctx.fillStyle = "#111";
-      ctx.beginPath(); ctx.arc(points[best].x, points[best].yA, 4, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(points[best].x, points[best].yB, 4, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-
-      const idx = best; // same index into labels
-      const html = tipBuilder(idx);
-
-      // place tooltip near mouse within wrap
-      const wrapRect = canvas.parentElement.getBoundingClientRect();
-      const tipX = (ev.clientX - wrapRect.left);
-      const tipY = (ev.clientY - wrapRect.top);
-
-      showTip(tipX, tipY, html);
-    }
-
-    function onLeave(){ hideTip(); recalc(); } // redraw fresh (quick)
-
-    canvas.onmousemove = onMove;
-    canvas.onmouseleave = onLeave;
-
-    // expose for external use if needed
-    return { points, len };
-  }
-
-  // ------------------------------
-  // Main recalculation (with debounces)
-  // ------------------------------
-  let raf = null;
-  let effTimer = null;
-
-  let cached = {
-    baseline: null,
-    scenario: null,
-    extrasMap: null,
-    P0: 0,
-    annualRate: 0,
-    months: 0,
-    startDate: new Date()
-  };
-
-  function recalc() {
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      const P0 = Math.max(0, Number(principalEl.value || 0));
-      const annualRate = Math.max(0, Number(rateEl.value || 0)) / 100;
-      const months = Math.max(1, Math.trunc(Number(yearsEl.value || 1) * 12));
-      const startDate = new Date(startDateEl.value ? startDateEl.value + "T00:00:00" : new Date());
-
-      // baseline: no extras
-      const baseline = simulate({
-        P0, annualRate, months, startDate,
-        mode: "keepPayment",
-        extrasMap: new Map()
-      });
-
-      // scenario: extras
-      const extrasMap = buildExtrasMap(months);
-      const scenario = simulate({
-        P0, annualRate, months, startDate,
-        mode,
-        extrasMap
-      });
-
-      cached = { baseline, scenario, extrasMap, P0, annualRate, months, startDate };
-
-      // Update testMonth max to baseline term (so слайдер не уезжал в пустоту)
-      const maxForSlider = Math.max(1, baseline.monthsActual || months);
-      testMonthEl.max = String(maxForSlider);
-      const cur = clamp(Number(testMonthEl.value||1), 1, maxForSlider);
-      testMonthEl.value = String(cur);
-      testMonthLabel.textContent = String(cur);
-
-      // KPIs
-      const basePay = baseline.basePayment;
-      const scFirstPay = scenario.rows[0] ? scenario.rows[0].payment : basePay;
-
-      kpiPayment.textContent = fmtRUB(mode === "keepPayment" ? basePay : scFirstPay);
-      kpiPaymentNote.textContent =
-        mode === "keepPayment"
-          ? "платёж фиксирован (аннуитет), меняется срок"
-          : "платёж пересчитывается после досрочек";
-
-      kpiTerm.textContent = `${fmtInt(scenario.monthsActual)} мес.`;
-      kpiEndDate.textContent = `закрытие: ${toISODate(scenario.endDate)}`;
-
-      kpiInterest.textContent = fmtRUB(scenario.totalInterest);
-      const di = scenario.totalInterest - baseline.totalInterest;
-      kpiInterestDelta.textContent = `разница к базовому: ${fmtRUB(di)}`;
-
-      kpiTotal.textContent = fmtRUB(scenario.totalPaid);
-      const dt = scenario.totalPaid - baseline.totalPaid;
-      kpiTotalDelta.textContent = `разница к базовому: ${fmtRUB(dt)}`;
-
-      const extrasSum = sumExtrasFromMap(extrasMap);
-      kpiExtras.textContent = fmtRUB(extrasSum);
-      const savedInterest = baseline.totalInterest - scenario.totalInterest;
-      const roi = extrasSum > 0 ? (savedInterest / extrasSum) : NaN;
-      kpiRoi.textContent = extrasSum > 0
-        ? `ROI по %: ${fmtRatio(roi)} ₽ экономии на 1 ₽ досрочки`
-        : "ROI: — (досрочек нет)";
-
-      const termSave = baseline.monthsActual - scenario.monthsActual;
-      kpiTermSave.textContent = `${termSave >= 0 ? fmtInt(termSave) : "0"} мес.`;
-      kpiTermSaveNote.textContent = termSave >= 0
-        ? "сокращение срока относительно базового"
-        : "—";
-
-      // Table
-      renderSchedule(scenario.rows);
-
-      // Charts
-      const baseBalances = baseline.rows.map(r=>r.balance);
-      const scBalances = scenario.rows.map(r=>r.balance);
-      const commonLen1 = Math.min(baseBalances.length, scBalances.length);
-      const labels1 = Array.from({length: commonLen1}, (_,i)=>i+1);
-
-      drawMultiLineChart({
-        canvas: balChart,
-        tipEl: balTip,
-        titleLeft: "Остаток долга",
-        seriesA: baseBalances.slice(0, commonLen1),
-        seriesB: scBalances.slice(0, commonLen1),
-        labels: labels1,
-        yFormatter: (v)=> {
-          // short axis formatting
-          if (v >= 1e6) return (v/1e6).toFixed(0) + "м";
-          if (v >= 1e3) return (v/1e3).toFixed(0) + "к";
-          return String(Math.round(v));
-        },
-        fillBetween: true,
-        tipBuilder: (idx)=> {
-          const m = idx+1;
-          const bRow = baseline.rows[m-1];
-          const sRow = scenario.rows[m-1];
-          const cumSave = (bRow?.cumInterest || 0) - (sRow?.cumInterest || 0);
-          const leftBase = Math.max(0, (baseline.monthsActual - m));
-          const leftSc = Math.max(0, (scenario.monthsActual - m));
-
-          return `
-            <div class="badge">Месяц ${m}</div><br/>
-            <span class="mut">Дата:</span> ${toISODate(sRow?.date || bRow?.date || new Date())}<br/>
-            <span class="mut">Остаток без досрочки:</span> <b>${fmtRUB(bRow?.balance || 0)}</b><br/>
-            <span class="mut">Остаток с досрочкой:</span> <b>${fmtRUB(sRow?.balance || 0)}</b><br/>
-            <span class="mut">Накопл. % без:</span> ${fmtRUB(bRow?.cumInterest || 0)}<br/>
-            <span class="mut">Накопл. % с:</span> ${fmtRUB(sRow?.cumInterest || 0)}<br/>
-            <span class="mut">Экономия % к этому месяцу:</span> <b>${fmtRUB(cumSave)}</b><br/>
-            <span class="mut">Осталось месяцев:</span> без ${leftBase}, с ${leftSc}
-          `;
-        }
-      });
-
-      const baseCumI = baseline.rows.map(r=>r.cumInterest || 0);
-      const scCumI = scenario.rows.map(r=>r.cumInterest || 0);
-      const commonLen2 = Math.min(baseCumI.length, scCumI.length);
-      const labels2 = Array.from({length: commonLen2}, (_,i)=>i+1);
-
-      drawMultiLineChart({
-        canvas: intChart,
-        tipEl: intTip,
-        titleLeft: "Накопленные проценты",
-        seriesA: baseCumI.slice(0, commonLen2),
-        seriesB: scCumI.slice(0, commonLen2),
-        labels: labels2,
-        yFormatter: (v)=> {
-          if (v >= 1e6) return (v/1e6).toFixed(1) + "м";
-          if (v >= 1e3) return (v/1e3).toFixed(0) + "к";
-          return String(Math.round(v));
-        },
-        fillBetween: true,
-        tipBuilder: (idx)=> {
-          const m = idx+1;
-          const bRow = baseline.rows[m-1];
-          const sRow = scenario.rows[m-1];
-          const cumSave = (bRow?.cumInterest || 0) - (sRow?.cumInterest || 0);
-          return `
-            <div class="badge">Месяц ${m}</div><br/>
-            <span class="mut">Накопл. % без:</span> <b>${fmtRUB(bRow?.cumInterest || 0)}</b><br/>
-            <span class="mut">Накопл. % с:</span> <b>${fmtRUB(sRow?.cumInterest || 0)}</b><br/>
-            <span class="mut">Экономия % к этому месяцу:</span> <b>${fmtRUB(cumSave)}</b>
-          `;
-        }
-      });
-
-      // Export CSV
-      exportCsvBtn.onclick = () => {
-        const csv = makeCsv(scenario.rows);
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "mortgage_schedule.csv";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      };
-
-      // update efficiency widgets
-      recalcTestEffect();
-      scheduleEffCurve(); // debounce heavy part
+    // series styles (same color; style by dash/alpha to keep minimal)
+    series.forEach((s, idx) => {
+      ctx.strokeStyle = idx === 0 ? "#111" : "rgba(17,17,17,0.75)";
+      if (s.style === "dash") plot(s.values, [7,6]);
+      else plot(s.values, []);
     });
-  }
 
-  // ------------------------------
-  // Test effect (marginal) and efficiency curve
-  // ------------------------------
-  function recalcTestEffect() {
-    const { scenario, baseline, extrasMap, P0, annualRate, months, startDate } = cached;
-    if (!scenario || !baseline) return;
-
-    const testAmt = Math.max(0, Number(testAmountEl.value || 0));
-    const testMonth = clamp(Math.trunc(Number(testMonthEl.value || 1)), 1, Math.max(1, baseline.monthsActual || months));
-    testMonthLabel.textContent = String(testMonth);
-
-    // scenarioWithoutTest = current scenario (extrasMap as is)
-    const sc0 = simulate({ P0, annualRate, months, startDate, mode, extrasMap });
-
-    // scenarioWithTest = same extras + extra at testMonth
-    const m2 = new Map(extrasMap);
-    m2.set(testMonth, (m2.get(testMonth) || 0) + testAmt);
-    const sc1 = simulate({ P0, annualRate, months, startDate, mode, extrasMap: m2 });
-
-    const saveInterest = sc0.totalInterest - sc1.totalInterest;
-    const saveTerm = sc0.monthsActual - sc1.monthsActual;
-    const roi = testAmt > 0 ? (saveInterest / testAmt) : NaN;
-
-    testSaveEl.textContent = fmtRUB(saveInterest);
-    testSaveNoteEl.textContent = testAmt > 0
-      ? `маржинально от +${fmtRUB(testAmt)} в ${testMonth}-й месяц`
-      : "задай сумму теста";
-
-    testRoiEl.textContent = testAmt > 0 ? `${fmtRatio(roi)} ₽/₽` : "—";
-    testTermSaveEl.textContent = saveTerm > 0
-      ? `сокращение срока: ${fmtInt(saveTerm)} мес.`
-      : "срок почти не меняется";
-  }
-
-  function scheduleEffCurve() {
-    if (effTimer) clearTimeout(effTimer);
-    effTimer = setTimeout(() => {
-      recalcEffCurve();
-    }, 160);
-  }
-
-  function recalcEffCurve() {
-    const { baseline, extrasMap, P0, annualRate, months, startDate } = cached;
-    if (!baseline) return;
-
-    const testAmt = Math.max(0, Number(testAmountEl.value || 0));
-    if (testAmt <= 0) {
-      // draw empty chart
-      drawSingleSeriesChart(effChart, effTip, [], "Эффективность по месяцам", (v)=>String(v), ()=>"");
-      return;
-    }
-
-    // compute for first N months (cap to keep it snappy)
-    const N = Math.min(baseline.monthsActual || months, 240); // cap 240 months for speed
-    const baseScenario = simulate({ P0, annualRate, months, startDate, mode, extrasMap });
-
-    const savings = [];
-    for (let m = 1; m <= N; m++) {
-      const mp = new Map(extrasMap);
-      mp.set(m, (mp.get(m) || 0) + testAmt);
-      const sc1 = simulate({ P0, annualRate, months, startDate, mode, extrasMap: mp });
-      savings.push(baseScenario.totalInterest - sc1.totalInterest); // saved interest vs current scenario
-    }
-
-    drawSingleSeriesChart(
-      effChart,
-      effTip,
-      savings,
-      "Экономия процентов от тестовой суммы",
-      (v)=> {
-        if (v >= 1e6) return (v/1e6).toFixed(1)+"м";
-        if (v >= 1e3) return (v/1e3).toFixed(0)+"к";
-        return String(Math.round(v));
-      },
-      (idx)=> {
-        const m = idx+1;
-        const s = savings[idx] || 0;
-        const roi = testAmt > 0 ? s / testAmt : 0;
-        return `
-          <div class="badge">Месяц ${m}</div><br/>
-          <span class="mut">Экономия процентов:</span> <b>${fmtRUB(s)}</b><br/>
-          <span class="mut">Эффективность:</span> <b>${fmtRatio(roi)} ₽/₽</b><br/>
-          <span class="mut">Тестовая сумма:</span> ${fmtRUB(testAmt)}
-        `;
-      }
-    );
-  }
-
-  function drawSingleSeriesChart(canvas, tipEl, series, titleLeft, yFormatter, tipBuilder) {
-    const ctx = canvas.getContext("2d");
-    const { w, h } = getCanvasDPR(canvas);
-    const padL = 46, padR = 14, padT = 18, padB = 26;
-
-    const n = Math.max(series.length, 1);
-    const maxY = series.length ? Math.max(...series, 1) : 1;
-    const minY = series.length ? Math.min(...series, 0) : 0;
-
-    const xFor = (i, len) => padL + (w - padL - padR) * (i / Math.max(len - 1, 1));
-    const yFor = (v) => (h - padB) - (h - padT - padB) * ((v - minY) / Math.max(maxY - minY, 1e-9));
-
-    ctx.clearRect(0,0,w,h);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0,0,w,h);
-
-    // grid
-    ctx.strokeStyle = "#eef1f5";
-    ctx.lineWidth = 1;
-    const gridLines = 4;
-    for (let g=0; g<=gridLines; g++) {
-      const y = padT + (h - padT - padB) * (g / gridLines);
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
-    }
-
-    // axes
-    ctx.strokeStyle = "#e4e8ef";
-    ctx.beginPath();
-    ctx.moveTo(padL, padT);
-    ctx.lineTo(padL, h - padB);
-    ctx.lineTo(w - padR, h - padB);
-    ctx.stroke();
-
-    // y labels
-    ctx.fillStyle = "#666";
-    ctx.font = `${12 * (window.devicePixelRatio||1)}px -apple-system, Segoe UI, Roboto, Arial`;
-    for (let g=0; g<=gridLines; g++) {
-      const v = maxY - (maxY - minY) * (g / gridLines);
-      const y = padT + (h - padT - padB) * (g / gridLines);
-      ctx.fillText(yFormatter(v), 6, y + 4);
-    }
-
-    // title
-    ctx.fillStyle = "#111";
-    ctx.font = `${12 * (window.devicePixelRatio||1)}px -apple-system, Segoe UI, Roboto, Arial`;
-    ctx.fillText(titleLeft || "", padL, 12);
-
-    if (!series.length) return;
-
-    // line
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i=0; i<series.length; i++){
-      const x = xFor(i, series.length);
-      const y = yFor(series[i]);
-      if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    }
-    ctx.stroke();
-
-    // hover
-    const points = series.map((v,i)=>({ x: xFor(i, series.length), y: yFor(v), v }));
+    // hover nearest by x using maxLen
+    const pointsX = new Array(maxLen).fill(0).map((_,i)=>xFor(i, maxLen));
 
     function hideTip(){ tipEl.style.display = "none"; }
-
     function showTip(x, y, html){
       tipEl.innerHTML = html;
       tipEl.style.left = `${x}px`;
@@ -1163,35 +909,39 @@
 
     function onMove(ev){
       const rect = canvas.getBoundingClientRect();
-      const mx = ev.clientX - rect.left;
-      const dpr = window.devicePixelRatio || 1;
-      const mxp = mx * dpr;
+      const mx = (ev.clientX - rect.left) * (window.devicePixelRatio||1);
 
-      let best = -1, bestDist = Infinity;
-      for (let i=0; i<points.length; i++){
-        const dist = Math.abs(points[i].x - mxp);
+      let best = 0, bestDist = Infinity;
+      for (let i=0; i<pointsX.length; i++){
+        const dist = Math.abs(pointsX[i] - mx);
         if (dist < bestDist){ bestDist = dist; best = i; }
       }
-      if (best < 0) return;
 
-      // redraw marker line + dot
+      // redraw marker
       ctx.save();
       ctx.strokeStyle = "rgba(17,17,17,0.18)";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(points[best].x, padT);
-      ctx.lineTo(points[best].x, h - padB);
+      ctx.moveTo(pointsX[best], padT);
+      ctx.lineTo(pointsX[best], h - padB);
       ctx.stroke();
 
+      // dots
       ctx.fillStyle = "#111";
-      ctx.beginPath(); ctx.arc(points[best].x, points[best].y, 4, 0, Math.PI*2); ctx.fill();
+      for (const s of series){
+        if (best < s.values.length){
+          ctx.beginPath();
+          ctx.arc(pointsX[best], yFor(s.values[best]), 4, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
       ctx.restore();
 
-      const html = tipBuilder(best);
       const wrapRect = canvas.parentElement.getBoundingClientRect();
       const tipX = (ev.clientX - wrapRect.left);
       const tipY = (ev.clientY - wrapRect.top);
-      showTip(tipX, tipY, html);
+
+      showTip(tipX, tipY, tipBuilder(best));
     }
 
     function onLeave(){ hideTip(); recalc(); }
@@ -1201,18 +951,497 @@
   }
 
   // ------------------------------
+  // Cached computations
+  // ------------------------------
+  let raf = null;
+  let heavyTimer = null;
+
+  let cached = {
+    P0: 0, annualRate: 0, months: 0, startDate: new Date(),
+    baseline: null, current: null, extrasMap: null
+  };
+
+  // ------------------------------
+  // Cashflow diff builder for test IRR
+  // ------------------------------
+  // "Without test" is current scenario; "With test" adds extra at month M.
+  // Cashflows are relative from month M:
+  // t0 = -testAmt
+  // t1.. = (cashOut_withoutTest - cashOut_withTest) for month M+1..endAligned,
+  // and for missing months (if one schedule ended early) cashOut treated as 0.
+  function buildTestCashflows(curRows, withRows, testMonth, testAmt) {
+    const a = curRows;     // without test
+    const b = withRows;    // with test
+    const startIdx = testMonth - 1;
+
+    const maxLen = Math.max(a.length, b.length);
+    const flows = [];
+    flows.push(-testAmt);
+
+    for (let i = startIdx + 1; i < maxLen; i++) {
+      const outA = (i < a.length) ? a[i].cashOut : 0;
+      const outB = (i < b.length) ? b[i].cashOut : 0;
+      flows.push(outA - outB);
+    }
+    return flows;
+  }
+
+  // ------------------------------
+  // Scenario summary compute
+  // ------------------------------
+  function computeFromConfig(cfg) {
+    const P0 = Math.max(0, Number(cfg.base.principal||0));
+    const annualRate = Math.max(0, Number(cfg.base.rate||0)) / 100;
+    const months = Math.max(1, Math.trunc(Number(cfg.base.years||1) * 12));
+    const startDate = new Date((cfg.base.startDate || toISODate(new Date())) + "T00:00:00");
+
+    const baseline = simulate({ P0, annualRate, months, startDate, mode:"keepPayment", extrasMap: new Map() });
+
+    // build extras map from cfg
+    const extrasMap = new Map();
+    // oneTimes
+    (cfg.oneTimes||[]).forEach(o=>{
+      const m = Math.max(1, Math.trunc(Number(o.month||1)));
+      const a = Math.max(0, Number(o.amount||0));
+      extrasMap.set(m, (extrasMap.get(m)||0) + a);
+    });
+    // regular
+    const regAmt = Math.max(0, Number(cfg.regular.amount||0));
+    const regStart = Math.max(1, Math.trunc(Number(cfg.regular.start||1)));
+    const regFreq = Math.max(1, Math.trunc(Number(cfg.regular.freq||1)));
+    const regEndRaw = Math.trunc(Number(cfg.regular.end||0));
+    const regEnd = regEndRaw <= 0 ? months : Math.max(regStart, regEndRaw);
+    if (regAmt > 0) {
+      for (let m=regStart; m<=Math.min(regEnd, months); m+=regFreq) {
+        extrasMap.set(m, (extrasMap.get(m)||0) + regAmt);
+      }
+    }
+
+    const current = simulate({ P0, annualRate, months, startDate, mode: cfg.mode, extrasMap });
+    const extrasSum = sumExtrasFromMap(extrasMap);
+    const savedInterest = baseline.totalInterest - current.totalInterest;
+    const roi = extrasSum>0 ? savedInterest/extrasSum : NaN;
+
+    return {
+      cfg,
+      baseline,
+      current,
+      extrasSum,
+      savedInterest,
+      roi,
+      termSave: baseline.monthsActual - current.monthsActual
+    };
+  }
+
+  function renderScenarioBox(targetEl, label, res) {
+    if (!res) {
+      targetEl.textContent = `Сохрани ${label}, чтобы увидеть метрики.`;
+      return;
+    }
+    const pay = res.current.rows[0]?.payment ?? res.current.basePayment;
+    targetEl.innerHTML = `
+      <div><b>Режим:</b> ${res.cfg.mode === "keepPayment" ? "платёж→срок" : "срок→платёж"}</div>
+      <div><b>Платёж:</b> ${fmtRUB(pay)}</div>
+      <div><b>Срок:</b> ${fmtInt(res.current.monthsActual)} мес. (до ${toISODate(res.current.endDate)})</div>
+      <div><b>Переплата %:</b> ${fmtRUB(res.current.totalInterest)}</div>
+      <div><b>Экономия %:</b> ${fmtRUB(res.savedInterest)}</div>
+      <div><b>Досрочки:</b> ${fmtRUB(res.extrasSum)}</div>
+      <div><b>ROI по %:</b> ${isFinite(res.roi) ? (fmtRatio(res.roi) + " ₽/₽") : "—"}</div>
+    `;
+  }
+
+  function renderScenarioDelta() {
+    if (!scenarioA || !scenarioB) {
+      abDelta.textContent = "Сохрани A и B, чтобы увидеть разницу.";
+      return;
+    }
+    const dInterest = scenarioB.current.totalInterest - scenarioA.current.totalInterest;
+    const dTerm = scenarioB.current.monthsActual - scenarioA.current.monthsActual;
+    const dPay = (scenarioB.current.rows[0]?.payment ?? scenarioB.current.basePayment) -
+                 (scenarioA.current.rows[0]?.payment ?? scenarioA.current.basePayment);
+
+    abDelta.textContent =
+      `B − A: переплата % ${fmtRUB(dInterest)}; срок ${fmtInt(dTerm)} мес.; платёж ${fmtRUB(dPay)}.`;
+  }
+
+  // ------------------------------
+  // Main recalc
+  // ------------------------------
+  function recalc() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const P0 = Math.max(0, Number(principalEl.value || 0));
+      const annualRate = Math.max(0, Number(rateEl.value || 0)) / 100;
+      const months = Math.max(1, Math.trunc(Number(yearsEl.value || 1) * 12));
+      const startDate = new Date(startDateEl.value ? startDateEl.value + "T00:00:00" : new Date());
+
+      const baseline = simulate({ P0, annualRate, months, startDate, mode:"keepPayment", extrasMap: new Map() });
+      const extrasMap = buildExtrasMap(months);
+      const current = simulate({ P0, annualRate, months, startDate, mode, extrasMap });
+
+      cached = { P0, annualRate, months, startDate, baseline, current, extrasMap };
+
+      // slider max
+      const maxForSlider = Math.max(1, baseline.monthsActual || months);
+      testMonthEl.max = String(maxForSlider);
+      const cur = clamp(Number(testMonthEl.value||1), 1, maxForSlider);
+      testMonthEl.value = String(cur);
+      testMonthLabel.textContent = String(cur);
+
+      // KPI
+      const basePay = baseline.basePayment;
+      const curPay = current.rows[0]?.payment ?? basePay;
+
+      kpiPayment.textContent = fmtRUB(mode === "keepPayment" ? basePay : curPay);
+      kpiPaymentNote.textContent = mode === "keepPayment"
+        ? "платёж фиксирован, меняется срок"
+        : "платёж пересчитывается после досрочек";
+
+      kpiTerm.textContent = `${fmtInt(current.monthsActual)} мес.`;
+      kpiEndDate.textContent = `закрытие: ${toISODate(current.endDate)}`;
+
+      kpiInterest.textContent = fmtRUB(current.totalInterest);
+      kpiInterestDelta.textContent = `экономия к базовому: ${fmtRUB(baseline.totalInterest - current.totalInterest)}`;
+
+      kpiTotal.textContent = fmtRUB(current.totalPaid);
+      kpiTotalDelta.textContent = `разница к базовому: ${fmtRUB(current.totalPaid - baseline.totalPaid)}`;
+
+      const extrasSum = sumExtrasFromMap(extrasMap);
+      const savedInterest = baseline.totalInterest - current.totalInterest;
+      const roi = extrasSum>0 ? savedInterest/extrasSum : NaN;
+      kpiExtras.textContent = fmtRUB(extrasSum);
+      kpiRoi.textContent = extrasSum>0 ? `ROI по %: ${fmtRatio(roi)} ₽/₽` : "ROI: —";
+
+      const termSave = baseline.monthsActual - current.monthsActual;
+      kpiTermSave.textContent = `${termSave>=0 ? fmtInt(termSave) : "0"} мес.`;
+      kpiTermSaveNote.textContent = "относительно базового";
+
+      // schedule
+      renderSchedule(current.rows);
+
+      // scenario boxes
+      renderScenarioBox(abA, "A", scenarioA);
+      renderScenarioBox(abB, "B", scenarioB);
+      renderScenarioDelta();
+
+      // charts: balances and cumulative interest with up to 4 lines: baseline, current, A, B
+      const seriesBalances = [];
+      seriesBalances.push({ name:"baseline", style:"solid", values: baseline.rows.map(r=>r.balance) });
+      seriesBalances.push({ name:"current", style:"dash", values: current.rows.map(r=>r.balance) });
+      if (scenarioA) seriesBalances.push({ name:"A", style:"solid", values: scenarioA.current.rows.map(r=>r.balance) });
+      if (scenarioB) seriesBalances.push({ name:"B", style:"solid", values: scenarioB.current.rows.map(r=>r.balance) });
+
+      drawMultiSeriesChart({
+        canvas: balChart,
+        tipEl: balTip,
+        titleLeft: "Остаток долга (baseline / current / A / B)",
+        series: seriesBalances,
+        yFormatter: (v)=> v>=1e6 ? (v/1e6).toFixed(0)+"м" : (v>=1e3 ? (v/1e3).toFixed(0)+"к" : String(Math.round(v))),
+        tipBuilder: (idx)=> {
+          const m = idx+1;
+          const pick = (arr)=> (idx < arr.length ? arr[idx] : null);
+          const b = pick(baseline.rows);
+          const c = pick(current.rows);
+          const a = scenarioA ? pick(scenarioA.current.rows) : null;
+          const d = scenarioB ? pick(scenarioB.current.rows) : null;
+
+          const saveNow = (b?.cumInterest||0) - (c?.cumInterest||0);
+
+          return `
+            <div class="badge">Месяц ${m}</div><br/>
+            <span class="mut">Дата:</span> ${toISODate((c?.date||b?.date||new Date()))}<br/>
+            <span class="mut">Baseline:</span> <b>${fmtRUB(b?.balance||0)}</b><br/>
+            <span class="mut">Current:</span> <b>${fmtRUB(c?.balance||0)}</b><br/>
+            ${a ? `<span class="mut">A:</span> <b>${fmtRUB(a?.balance||0)}</b><br/>` : ``}
+            ${d ? `<span class="mut">B:</span> <b>${fmtRUB(d?.balance||0)}</b><br/>` : ``}
+            <span class="mut">Экономия % (baseline-current) к этому месяцу:</span> <b>${fmtRUB(saveNow)}</b>
+          `;
+        }
+      });
+
+      const seriesCumI = [];
+      seriesCumI.push({ name:"baseline", style:"solid", values: baseline.rows.map(r=>r.cumInterest||0) });
+      seriesCumI.push({ name:"current", style:"dash", values: current.rows.map(r=>r.cumInterest||0) });
+      if (scenarioA) seriesCumI.push({ name:"A", style:"solid", values: scenarioA.current.rows.map(r=>r.cumInterest||0) });
+      if (scenarioB) seriesCumI.push({ name:"B", style:"solid", values: scenarioB.current.rows.map(r=>r.cumInterest||0) });
+
+      drawMultiSeriesChart({
+        canvas: intChart,
+        tipEl: intTip,
+        titleLeft: "Накопленные проценты",
+        series: seriesCumI,
+        yFormatter: (v)=> v>=1e6 ? (v/1e6).toFixed(1)+"м" : (v>=1e3 ? (v/1e3).toFixed(0)+"к" : String(Math.round(v))),
+        tipBuilder: (idx)=> {
+          const m = idx+1;
+          const b = idx<baseline.rows.length ? baseline.rows[idx] : null;
+          const c = idx<current.rows.length ? current.rows[idx] : null;
+          const saveNow = (b?.cumInterest||0) - (c?.cumInterest||0);
+          return `
+            <div class="badge">Месяц ${m}</div><br/>
+            <span class="mut">Baseline cum%:</span> <b>${fmtRUB(b?.cumInterest||0)}</b><br/>
+            <span class="mut">Current cum%:</span> <b>${fmtRUB(c?.cumInterest||0)}</b><br/>
+            <span class="mut">Экономия %:</span> <b>${fmtRUB(saveNow)}</b>
+          `;
+        }
+      });
+
+      // export CSV
+      exportCsvBtn.onclick = () => {
+        const csv = makeCsv(current.rows);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "mortgage_schedule_current.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      // update test IRR and eff map (debounced)
+      recalcTest();
+      scheduleHeavy();
+    });
+  }
+
+  function scheduleHeavy(){
+    if (heavyTimer) clearTimeout(heavyTimer);
+    heavyTimer = setTimeout(()=>recalcEfficiencyMap(), 220);
+  }
+
+  // ------------------------------
+  // Test IRR + notice
+  // ------------------------------
+  function recalcTest() {
+    const { P0, annualRate, months, startDate, current, extrasMap } = cached;
+    if (!current) return;
+
+    const testAmt = Math.max(0, Number(testAmountEl.value || 0));
+    const testMonth = clamp(Math.trunc(Number(testMonthEl.value || 1)), 1, Math.max(1, (cached.baseline?.monthsActual||months)));
+    testMonthLabel.textContent = String(testMonth);
+
+    if (testAmt <= 0) {
+      testSaveEl.textContent = "—";
+      testSaveNoteEl.textContent = "задай сумму теста";
+      testIrrEl.textContent = "—";
+      testIrrNoteEl.textContent = "—";
+      irrNotice.className = "notice";
+      irrNotice.textContent = "Укажи тестовую сумму, чтобы посчитать IRR.";
+      return;
+    }
+
+    // current scenario without test:
+    const sc0 = current;
+
+    // scenario with test:
+    const m2 = new Map(extrasMap);
+    m2.set(testMonth, (m2.get(testMonth) || 0) + testAmt);
+    const sc1 = simulate({ P0, annualRate, months, startDate, mode, extrasMap: m2 });
+
+    const saveInterest = sc0.totalInterest - sc1.totalInterest;
+    testSaveEl.textContent = fmtRUB(saveInterest);
+    testSaveNoteEl.textContent = `маржинально от +${fmtRUB(testAmt)} в ${testMonth}-й месяц`;
+
+    // IRR cashflows
+    const flows = buildTestCashflows(sc0.rows, sc1.rows, testMonth, testAmt);
+    const rm = irrMonthly(flows);
+    const ra = annualizeFromMonthly(rm);
+    testIrrEl.textContent = fmtPct(ra * 100);
+    testIrrNoteEl.textContent = `денежные потоки: -${fmtRUB(testAmt)} → +экономия платежей`;
+
+    // Notice vs deposit
+    const dep = Math.max(0, Number(depositRateEl.value||0)) / 100;
+    if (!isFinite(ra)) {
+      irrNotice.className = "notice warn";
+      irrNotice.textContent = "IRR не удалось определить (обычно если нет положительных “возвратов” после досрочки). Попробуй другой месяц/сумму.";
+      return;
+    }
+
+    if (ra < dep) {
+      irrNotice.className = "notice warn";
+      irrNotice.innerHTML = `<b>Внимание:</b> IRR досрочки (${fmtPct(ra*100)}) ниже ставки вклада (${fmtPct(dep*100)}). На этом этапе “по годовым” вклад выгоднее.`;
+    } else {
+      irrNotice.className = "notice ok";
+      irrNotice.innerHTML = `<b>Ок:</b> IRR досрочки (${fmtPct(ra*100)}) выше ставки вклада (${fmtPct(dep*100)}). На этом этапе досрочка “по годовым” выгоднее.`;
+    }
+  }
+
+  // ------------------------------
+  // Efficiency map: two curves (saved interest, IRR annual)
+  // ------------------------------
+  function recalcEfficiencyMap() {
+    const { P0, annualRate, months, startDate, current, extrasMap, baseline } = cached;
+    if (!current || !baseline) return;
+
+    const testAmt = Math.max(0, Number(testAmountEl.value || 0));
+    const dep = Math.max(0, Number(depositRateEl.value||0)) / 100;
+
+    if (testAmt <= 0) {
+      drawMultiSeriesChart({
+        canvas: effChart,
+        tipEl: effTip,
+        titleLeft: "Эффективность (задай тестовую сумму)",
+        series: [{name:"empty", style:"solid", values: []}],
+        yFormatter: ()=>"",
+        tipBuilder: ()=>""
+      });
+      return;
+    }
+
+    const N = Math.min(baseline.monthsActual || months, 240); // cap
+    const baseScenario = current; // relative to current scenario (маржинально к нему)
+
+    const savedArr = [];
+    const irrArr = [];
+
+    let firstBelow = null;
+
+    for (let m = 1; m <= N; m++) {
+      const mp = new Map(extrasMap);
+      mp.set(m, (mp.get(m) || 0) + testAmt);
+      const sc1 = simulate({ P0, annualRate, months, startDate, mode, extrasMap: mp });
+
+      const saved = baseScenario.totalInterest - sc1.totalInterest;
+      savedArr.push(saved);
+
+      const flows = buildTestCashflows(baseScenario.rows, sc1.rows, m, testAmt);
+      const rm = irrMonthly(flows);
+      const ra = annualizeFromMonthly(rm);
+      irrArr.push(isFinite(ra) ? ra : NaN);
+
+      if (firstBelow === null && isFinite(ra) && ra < dep) firstBelow = m;
+    }
+
+    drawMultiSeriesChart({
+      canvas: effChart,
+      tipEl: effTip,
+      titleLeft: "Карта: экономия % (₽) и IRR (годовых)",
+      series: [
+        { name:"saved", style:"solid", values: savedArr.map(v=>Math.max(0,v)) },
+        // scale IRR to money axis? Нет. Поэтому делаем хитро:
+        // рисуем IRR в "процентах * 1e6" для визуала? будет криво.
+        // Вместо этого — рисуем IRR в отдельной шкале нельзя в одном простом канвасе без усложнения.
+        // Решение: рисуем IRR как "в процентах" в тех же пикселях — значит используем вторую серию,
+        // но она будет в других единицах. Поэтому yFormatter + tooltip объясняют.
+        // Для читаемости: умножаем IRR на (testAmt)?? тоже не то.
+        // Делаем компромисс: IRR рисуем как проценты, но отдельной нормализацией внутри:
+      ],
+      yFormatter: (v)=> {
+        // This axis now for saved interest only
+        if (v >= 1e6) return (v/1e6).toFixed(1)+"м";
+        if (v >= 1e3) return (v/1e3).toFixed(0)+"к";
+        return String(Math.round(v));
+      },
+      tipBuilder: (idx)=> {
+        const m = idx+1;
+        const saved = savedArr[idx] || 0;
+        const irr = irrArr[idx];
+        const irrTxt = isFinite(irr) ? fmtPct(irr*100) : "—";
+        const roi = testAmt > 0 ? saved/testAmt : NaN;
+        const below = isFinite(irr) && irr < dep;
+
+        return `
+          <div class="badge">Месяц ${m}</div><br/>
+          <span class="mut">Экономия %:</span> <b>${fmtRUB(saved)}</b><br/>
+          <span class="mut">ROI (экономия/сумма):</span> <b>${fmtRatio(roi)} ₽/₽</b><br/>
+          <span class="mut">IRR (годовых):</span> <b>${irrTxt}</b><br/>
+          <span class="mut">Вклад:</span> ${fmtPct(dep*100)}<br/>
+          <span class="mut">Сравнение:</span> <b>${below ? "вклад выгоднее" : "досрочка выгоднее"}</b>
+        `;
+      }
+    });
+
+    // Overlay IRR curve on the same canvas as a second pass with its own normalization (visual only)
+    // Normalize IRR to [0..1] and map into chart area.
+    overlayIrrLine(effChart, irrArr, dep);
+
+    // Small note in notice
+    if (firstBelow !== null) {
+      irrNotice.className = "notice warn";
+      irrNotice.innerHTML = `<b>Сигнал:</b> начиная примерно с <b>${firstBelow}-го месяца</b> IRR тестовой досрочки падает ниже ставки вклада (${fmtPct(dep*100)}).`;
+    }
+  }
+
+  function overlayIrrLine(canvas, irrArr, dep) {
+    const ctx = canvas.getContext("2d");
+    const { w, h } = getCanvasDPR(canvas);
+    const padL = 46, padR = 14, padT = 18, padB = 26;
+
+    const vals = irrArr.filter(v=>isFinite(v));
+    if (!vals.length) return;
+
+    // Normalize between min/max for visual
+    const min = Math.min(...vals, dep);
+    const max = Math.max(...vals, dep, min + 1e-6);
+
+    const xFor = (i, len) => padL + (w - padL - padR) * (i / Math.max(len - 1, 1));
+    const yFor = (v) => {
+      const t = (v - min) / (max - min);
+      return (h - padB) - (h - padT - padB) * t;
+    };
+
+    // IRR line dashed lighter
+    ctx.save();
+    ctx.strokeStyle = "rgba(27,68,214,0.85)";
+    ctx.setLineDash([6,5]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i=0; i<irrArr.length; i++){
+      const v = irrArr[i];
+      if (!isFinite(v)) continue;
+      const x = xFor(i, irrArr.length);
+      const y = yFor(v);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // deposit horizontal line
+    ctx.setLineDash([2,6]);
+    ctx.strokeStyle = "rgba(27,68,214,0.45)";
+    const yd = yFor(dep);
+    ctx.beginPath();
+    ctx.moveTo(padL, yd);
+    ctx.lineTo(w - padR, yd);
+    ctx.stroke();
+
+    // labels
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(27,68,214,0.9)";
+    ctx.font = `${12 * (window.devicePixelRatio||1)}px -apple-system, Segoe UI, Roboto, Arial`;
+    ctx.fillText("IRR (визуально, синяя линия)", padL, padT + 14);
+    ctx.fillStyle = "rgba(27,68,214,0.7)";
+    ctx.fillText("ставка вклада (синяя пунктирная)", padL, padT + 30);
+
+    // min/max legend
+    ctx.fillStyle = "rgba(27,68,214,0.7)";
+    ctx.fillText(`IRR шкала: ${fmtPct(min*100)} … ${fmtPct(max*100)}`, padL, h - 6);
+
+    ctx.restore();
+  }
+
+  // ------------------------------
+  // Scenario buttons
+  // ------------------------------
+  saveA.onclick = () => { scenarioA = computeFromConfig(getCurrentConfig()); renderScenarioBox(abA,"A",scenarioA); renderScenarioDelta(); recalc(); };
+  saveB.onclick = () => { scenarioB = computeFromConfig(getCurrentConfig()); renderScenarioBox(abB,"B",scenarioB); renderScenarioDelta(); recalc(); };
+  loadA.onclick = () => { if (!scenarioA) return; applyConfig(scenarioA.cfg); };
+  loadB.onclick = () => { if (!scenarioB) return; applyConfig(scenarioB.cfg); };
+
+  // ------------------------------
   // Events
   // ------------------------------
-  function bindRecalcInputs() {
+  function bindInputs() {
     const inputs = [
       principalEl, rateEl, yearsEl, startDateEl,
       regAmountEl, regStartEl, regFreqEl, regEndEl,
+      depositRateEl,
       rowsModeEl,
       testAmountEl
     ];
     for (const x of inputs) {
-      x.addEventListener("input", () => { recalc(); });
-      x.addEventListener("change", () => { recalc(); });
+      x.addEventListener("input", recalc);
+      x.addEventListener("change", recalc);
     }
   }
 
@@ -1241,16 +1470,15 @@
 
   testMonthEl.addEventListener("input", () => {
     testMonthLabel.textContent = String(testMonthEl.value);
-    recalcTestEffect();
+    recalcTest();
   });
-  testMonthEl.addEventListener("change", () => {
-    recalcTestEffect();
-  });
+  testMonthEl.addEventListener("change", recalcTest);
 
   // init
-  bindRecalcInputs();
+  bindInputs();
   renderOneTimes();
   recalc();
+
 })();
 </script>
 </body>
