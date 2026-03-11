@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RNP Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-2: #0e1530;
+      --panel: rgba(18, 25, 55, 0.92);
+      --panel-2: #172044;
+      --line: rgba(255,255,255,.08);
+      --text: #eef2ff;
+      --muted: #97a4d3;
+      --accent: #60a5fa;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top left, #13204a 0%, var(--bg) 40%, #070b18 100%);
+    }
+    .wrap { max-width: 1480px; margin: 0 auto; padding: 22px; }
+    .topbar {
+      display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:16px;
+    }
+    .title h1 { margin:0; font-size:28px; }
+    .title p { margin:6px 0 0; color:var(--muted); }
+    .badge {
+      display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:999px;
+      border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--muted); font-size:13px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.25);
+      backdrop-filter: blur(12px);
+    }
+    .filters {
+      display:grid; grid-template-columns: repeat(8, minmax(120px, 1fr)); gap:12px; align-items:end;
+    }
+    .field label { display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    .field input, .field select, .field button {
+      width:100%; height:40px; border-radius:12px; border:1px solid var(--line);
+      background: var(--panel-2); color:var(--text); padding:0 12px; font-size:14px;
+    }
+    .field button { background: var(--accent); color:#07101f; border:none; font-weight:700; cursor:pointer; }
+    .field button.secondary { background: #24325f; color: var(--text); border:1px solid var(--line); }
+    .grid-5, .grid-3, .grid-2 { display:grid; gap:14px; }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .spacer { height:14px; }
+    .kpi .label { color:var(--muted); font-size:12px; margin-bottom:8px; }
+    .kpi .value { font-size:28px; font-weight:700; line-height:1.15; }
+    .kpi .meta { margin-top:8px; font-size:13px; color:var(--muted); }
+    .good { color: var(--good); }
+    .bad { color: var(--bad); }
+    .warn { color: var(--warn); }
+    h2 { margin:0 0 12px; font-size:17px; }
+    .subnote { color:var(--muted); font-size:12px; margin-top:8px; }
+    canvas { width:100% !important; height:320px !important; }
+    .table-wrap { overflow:auto; }
+    table { width:100%; border-collapse: collapse; font-size:14px; }
+    th, td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+    th:first-child, td:first-child { text-align:left; }
+    th { color:var(--muted); font-weight:600; position:sticky; top:0; background: #121937; }
+    .empty {
+      border:1px dashed var(--line); border-radius:14px; padding:18px; color:var(--muted); font-size:14px;
+      background: rgba(255,255,255,.02);
+    }
+    @media (max-width: 1280px) {
+      .filters { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+      .grid-5 { grid-template-columns: repeat(3, 1fr); }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .topbar { flex-direction:column; align-items:flex-start; }
+      .filters, .grid-5, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      canvas { height:280px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>RNP Dashboard</h1>
+        <p>Интерактивный дашборд по маркетингу и продажам. Источник: Google Drive folder → Apps Script → GitHub Pages.</p>
+      </div>
+      <div class="badge" id="sourceBadge">Источник не подключён</div>
+    </div>
+
+    <div class="panel">
+      <div class="filters">
+        <div class="field"><label>Период от</label><input type="date" id="dateFrom"></div>
+        <div class="field"><label>Период до</label><input type="date" id="dateTo"></div>
+        <div class="field"><label>Сравнение от</label><input type="date" id="compareFrom"></div>
+        <div class="field"><label>Сравнение до</label><input type="date" id="compareTo"></div>
+        <div class="field"><label>Ответственный</label><select id="ownerFilter"><option value="all">Все</option></select></div>
+        <div class="field"><label>Канал</label><select id="channelFilter"><option value="all">Все</option></select></div>
+        <div class="field"><label>Агрегация</label><select id="granularity"><option value="day">По дням</option><option value="week">По неделям</option><option value="month">По месяцам</option></select></div>
+        <div class="field"><label>&nbsp;</label><button id="applyBtn">Обновить</button></div>
+      </div>
+      <div class="subnote">Фильтры работают по накопленной истории файлов в папке. Сравнение считается как текущий диапазон против второго диапазона.</div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="grid-5" id="kpiGrid"></div>
+
+    <div class="spacer"></div>
+
+    <div class="grid-2">
+      <div class="panel"><h2>Динамика периода</h2><canvas id="trendChart"></canvas></div>
+      <div class="panel"><h2>Воронка продаж</h2><canvas id="funnelChart"></canvas></div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="grid-3">
+      <div class="panel"><h2>Стоимость привлечения</h2><canvas id="costChart"></canvas></div>
+      <div class="panel"><h2>Конверсии</h2><canvas id="conversionChart"></canvas></div>
+      <div class="panel"><h2>Сравнение периодов</h2><canvas id="compareChart"></canvas></div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="panel">
+      <h2>Таблица по периодам</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Период</th>
+              <th>Расход</th>
+              <th>Лиды</th>
+              <th>Квал. лиды</th>
+              <th>Записи</th>
+              <th>Доезды</th>
+              <th>Оплаты</th>
+              <th>Выручка</th>
+              <th>CPL</th>
+              <th>CPQL</th>
+              <th>CPO</th>
+              <th>ROMI</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="panel" id="statusPanel">
+      <h2>Статус подключения</h2>
+      <div class="empty" id="statusText">Укажи URL Apps Script в переменной <code>CONFIG.endpoint</code> внутри файла и открой страницу заново.</div>
+    </div>
+  </div>
+
+<script>
+const CONFIG = {
+  endpoint: '',
+  callbackName: 'RNPDashboardJSONP',
+  useDemoWhenEmpty: true
+};
+
+const DEMO_ROWS = [
+  { date:'2026-03-01', owner:'Илья', channel:'Yandex', spend:25000, impressions:52000, clicks:1640, leads:38, qualLeads:23, appointments:14, arrivals:9, payments:6, revenue:276000 },
+  { date:'2026-03-02', owner:'Илья', channel:'Yandex', spend:24000, impressions:51000, clicks:1580, leads:34, qualLeads:22, appointments:13, arrivals:9, payments:5, revenue:228000 },
+  { date:'2026-03-03', owner:'Дмитрий', channel:'Avito', spend:17000, impressions:14000, clicks:470, leads:16, qualLeads:9, appointments:7, arrivals:4, payments:3, revenue:138000 },
+  { date:'2026-03-04', owner:'Дмитрий', channel:'Avito', spend:18000, impressions:15000, clicks:500, leads:18, qualLeads:10, appointments:8, arrivals:5, payments:3, revenue:141000 },
+  { date:'2026-03-05', owner:'Илья', channel:'VK', spend:12000, impressions:39000, clicks:970, leads:20, qualLeads:11, appointments:7, arrivals:5, payments:2, revenue:92000 },
+  { date:'2026-03-06', owner:'Илья', channel:'VK', spend:11000, impressions:36000, clicks:930, leads:19, qualLeads:10, appointments:6, arrivals:4, payments:2, revenue:95000 },
+  { date:'2026-03-07', owner:'Дмитрий', channel:'Yandex', spend:21000, impressions:47000, clicks:1390, leads:31, qualLeads:18, appointments:11, arrivals:7, payments:4, revenue:188000 },
+  { date:'2026-03-08', owner:'Илья', channel:'Yandex', spend:26000, impressions:55000, clicks:1710, leads:40, qualLeads:25, appointments:15, arrivals:10, payments:6, revenue:282000 },
+  { date:'2026-03-09', owner:'Дмитрий', channel:'Avito', spend:16000, impressions:13600, clicks:430, leads:15, qualLeads:8, appointments:6, arrivals:4, payments:2, revenue:94000 },
+  { date:'2026-03-10', owner:'Илья', channel:'VK', spend:13000, impressions:40000, clicks:990, leads:21, qualLeads:12, appointments:8, arrivals:5, payments:3, revenue:141000 }
+];
+
+let RAW_ROWS = [];
+let charts = {};
+
+const fmtInt = n => new Intl.NumberFormat('ru-RU').format(Math.round(n || 0));
+const fmtPct = n => `${(n || 0).toFixed(1)}%`;
+const fmtRub = n => new Intl.NumberFormat('ru-RU', { style:'currency', currency:'RUB', maximumFractionDigits:0 }).format(n || 0);
+const sumBy = (rows, key) => rows.reduce((acc, row) => acc + (Number(row[key]) || 0), 0);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+
+function isoToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function minusDays(isoDate, days) {
+  const d = new Date(isoDate + 'T00:00:00');
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+function normalizeRow(row) {
+  const out = { ...row };
+  ['spend','impressions','clicks','leads','qualLeads','appointments','arrivals','payments','revenue'].forEach(k => {
+    out[k] = Number(out[k] || 0);
+  });
+  out.date = String(out.date || '').slice(0, 10);
+  out.owner = out.owner || 'Не указан';
+  out.channel = out.channel || 'Не указан';
+  return out;
+}
+
+function fillFilterOptions(rows) {
+  const owners = [...new Set(rows.map(r => r.owner))].sort();
+  const channels = [...new Set(rows.map(r => r.channel))].sort();
+  const ownerSelect = document.getElementById('ownerFilter');
+  const channelSelect = document.getElementById('channelFilter');
+  ownerSelect.innerHTML = '<option value="all">Все</option>' + owners.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  channelSelect.innerHTML = '<option value="all">Все</option>' + channels.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+}
+
+function setDefaultDates(rows) {
+  if (!rows.length) return;
+  const dates = rows.map(r => r.date).sort();
+  const maxDate = dates[dates.length - 1];
+  const minDate = dates[0];
+  document.getElementById('dateTo').value = maxDate;
+  document.getElementById('dateFrom').value = minusDays(maxDate, 6) < minDate ? minDate : minusDays(maxDate, 6);
+  document.getElementById('compareTo').value = minusDays(document.getElementById('dateFrom').value, 1);
+  document.getElementById('compareFrom').value = minusDays(document.getElementById('compareTo').value, 6) < minDate ? minDate : minusDays(document.getElementById('compareTo').value, 6);
+}
+
+function between(date, from, to) {
+  return (!from || date >= from) && (!to || date <= to);
+}
+
+function applyClientFilters(rows) {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  const owner = document.getElementById('ownerFilter').value;
+  const channel = document.getElementById('channelFilter').value;
+  return rows.filter(r => between(r.date, from, to))
+             .filter(r => owner === 'all' || r.owner === owner)
+             .filter(r => channel === 'all' || r.channel === channel);
+}
+
+function compareRows(rows) {
+  const from = document.getElementById('compareFrom').value;
+  const to = document.getElementById('compareTo').value;
+  const owner = document.getElementById('ownerFilter').value;
+  const channel = document.getElementById('channelFilter').value;
+  return rows.filter(r => between(r.date, from, to))
+             .filter(r => owner === 'all' || r.owner === owner)
+             .filter(r => channel === 'all' || r.channel === channel);
+}
+
+function startOfWeek(date) {
+  const d = new Date(date + 'T00:00:00');
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - day + 1);
+  return d.toISOString().slice(0,10);
+}
+
+function monthKey(date) {
+  return String(date).slice(0,7);
+}
+
+function aggregateRows(rows, granularity) {
+  const map = new Map();
+  rows.forEach(r => {
+    const key = granularity === 'month' ? monthKey(r.date) : granularity === 'week' ? startOfWeek(r.date) : r.date;
+    if (!map.has(key)) map.set(key, { key, spend:0, impressions:0, clicks:0, leads:0, qualLeads:0, appointments:0, arrivals:0, payments:0, revenue:0 });
+    const cur = map.get(key);
+    ['spend','impressions','clicks','leads','qualLeads','appointments','arrivals','payments','revenue'].forEach(f => cur[f] += Number(r[f] || 0));
+  });
+  return [...map.values()].sort((a,b) => a.key.localeCompare(b.key)).map(addComputed);
+}
+
+function addComputed(item) {
+  const leads = item.leads || 0;
+  const qual = item.qualLeads || 0;
+  const appts = item.appointments || 0;
+  const arrivals = item.arrivals || 0;
+  const payments = item.payments || 0;
+  const spend = item.spend || 0;
+  const revenue = item.revenue || 0;
+  return {
+    ...item,
+    cpl: leads ? spend / leads : 0,
+    cpql: qual ? spend / qual : 0,
+    cpo: payments ? spend / payments : 0,
+    avgCheck: payments ? revenue / payments : 0,
+    romi: spend ? ((revenue - spend) / spend) * 100 : 0,
+    ctr: item.impressions ? (item.clicks / item.impressions) * 100 : 0,
+    crClickToLead: item.clicks ? (leads / item.clicks) * 100 : 0,
+    crLeadToQual: leads ? (qual / leads) * 100 : 0,
+    crLeadToAppointment: leads ? (appts / leads) * 100 : 0,
+    crAppointmentToArrival: appts ? (arrivals / appts) * 100 : 0,
+    crArrivalToPayment: arrivals ? (payments / arrivals) * 100 : 0,
+    crLeadToPayment: leads ? (payments / leads) * 100 : 0,
+  };
+}
+
+function totals(rows) {
+  return addComputed(rows.reduce((acc, r) => {
+    ['spend','impressions','clicks','leads','qualLeads','appointments','arrivals','payments','revenue'].forEach(f => acc[f] += Number(r[f] || 0));
+    return acc;
+  }, { spend:0, impressions:0, clicks:0, leads:0, qualLeads:0, appointments:0, arrivals:0, payments:0, revenue:0 }));
+}
+
+function deltaText(current, previous, type) {
+  if (!isFinite(previous) || previous === 0) return 'Нет базы сравнения';
+  const delta = ((current - previous) / previous) * 100;
+  const cls = delta >= 0 ? 'good' : 'bad';
+  const sign = delta >= 0 ? '+' : '';
+  const value = type === 'money' ? fmtRub(current - previous) : type === 'int' ? fmtInt(current - previous) : fmtPct(delta);
+  return `<span class="${cls}">${sign}${fmtPct(delta)}</span> к периоду сравнения · Δ ${value}`;
+}
+
+function renderKPIs(current, previous) {
+  const items = [
+    { label:'Расход', value:fmtRub(current.spend), meta:deltaText(current.spend, previous.spend, 'money') },
+    { label:'Лиды', value:fmtInt(current.leads), meta:deltaText(current.leads, previous.leads, 'int') },
+    { label:'Квал. лиды', value:fmtInt(current.qualLeads), meta:deltaText(current.qualLeads, previous.qualLeads, 'int') },
+    { label:'Оплаты', value:fmtInt(current.payments), meta:deltaText(current.payments, previous.payments, 'int') },
+    { label:'Выручка', value:fmtRub(current.revenue), meta:deltaText(current.revenue, previous.revenue, 'money') },
+    { label:'CPL', value:fmtRub(current.cpl), meta:`CPQL ${fmtRub(current.cpql)} · CPO ${fmtRub(current.cpo)}` },
+    { label:'ROMI', value:fmtPct(current.romi), meta:`Средний чек ${fmtRub(current.avgCheck)}` },
+    { label:'CR лид → оплата', value:fmtPct(current.crLeadToPayment), meta:`Лид → запись ${fmtPct(current.crLeadToAppointment)} · Доезд → оплата ${fmtPct(current.crArrivalToPayment)}` },
+    { label:'CTR', value:fmtPct(current.ctr), meta:`CR клик → лид ${fmtPct(current.crClickToLead)}` },
+    { label:'Показы / клики', value:`${fmtInt(current.impressions)} / ${fmtInt(current.clicks)}`, meta:'Верх воронки' }
+  ];
+  document.getElementById('kpiGrid').innerHTML = items.map(item => `
+    <div class="panel kpi">
+      <div class="label">${item.label}</div>
+      <div class="value">${item.value}</div>
+      <div class="meta">${item.meta}</div>
+    </div>`).join('');
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => c && c.destroy && c.destroy());
+}
+
+function chartOptions() {
+  return {
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'#eef2ff' } } },
+    scales:{
+      x:{ ticks:{ color:'#97a4d3' }, grid:{ color:'rgba(255,255,255,.06)' } },
+      y:{ ticks:{ color:'#97a4d3' }, grid:{ color:'rgba(255,255,255,.06)' } }
+    }
+  };
+}
+
+function renderCharts(aggregated, current, previous) {
+  destroyCharts();
+  charts.trend = new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{
+      labels: aggregated.map(r => r.key),
+      datasets:[
+        { label:'Расход', data: aggregated.map(r => r.spend), borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,.18)', tension:.25 },
+        { label:'Лиды', data: aggregated.map(r => r.leads), borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.18)', tension:.25 },
+        { label:'Выручка', data: aggregated.map(r => r.revenue), borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.18)', tension:.25 }
+      ]
+    },
+    options: chartOptions()
+  });
+
+  charts.funnel = new Chart(document.getElementById('funnelChart'), {
+    type:'bar',
+    data:{
+      labels:['Лиды','Квал. лиды','Записи','Доезды','Оплаты'],
+      datasets:[{ label:'Количество', data:[current.leads, current.qualLeads, current.appointments, current.arrivals, current.payments], backgroundColor:['#60a5fa','#22c55e','#a78bfa','#f59e0b','#ef4444'] }]
+    },
+    options: chartOptions()
+  });
+
+  charts.cost = new Chart(document.getElementById('costChart'), {
+    type:'bar',
+    data:{
+      labels: aggregated.map(r => r.key),
+      datasets:[
+        { label:'CPL', data: aggregated.map(r => r.cpl), backgroundColor:'#60a5fa' },
+        { label:'CPQL', data: aggregated.map(r => r.cpql), backgroundColor:'#22c55e' },
+        { label:'CPO', data: aggregated.map(r => r.cpo), backgroundColor:'#f59e0b' }
+      ]
+    },
+    options: chartOptions()
+  });
+
+  charts.conversion = new Chart(document.getElementById('conversionChart'), {
+    type:'line',
+    data:{
+      labels: aggregated.map(r => r.key),
+      datasets:[
+        { label:'CR клик → лид', data: aggregated.map(r => r.crClickToLead), borderColor:'#60a5fa', tension:.25 },
+        { label:'CR лид → запись', data: aggregated.map(r => r.crLeadToAppointment), borderColor:'#22c55e', tension:.25 },
+        { label:'CR запись → доезд', data: aggregated.map(r => r.crAppointmentToArrival), borderColor:'#a78bfa', tension:.25 },
+        { label:'CR доезд → оплата', data: aggregated.map(r => r.crArrivalToPayment), borderColor:'#f59e0b', tension:.25 }
+      ]
+    },
+    options: chartOptions()
+  });
+
+  charts.compare = new Chart(document.getElementById('compareChart'), {
+    type:'bar',
+    data:{
+      labels:['Расход','Лиды','Оплаты','Выручка','ROMI'],
+      datasets:[
+        { label:'Текущий период', data:[current.spend, current.leads, current.payments, current.revenue, current.romi], backgroundColor:'#60a5fa' },
+        { label:'Период сравнения', data:[previous.spend, previous.leads, previous.payments, previous.revenue, previous.romi], backgroundColor:'#24325f' }
+      ]
+    },
+    options: chartOptions()
+  });
+}
+
+function renderTable(aggregated) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = aggregated.map(r => `
+    <tr>
+      <td>${esc(r.key)}</td>
+      <td>${fmtRub(r.spend)}</td>
+      <td>${fmtInt(r.leads)}</td>
+      <td>${fmtInt(r.qualLeads)}</td>
+      <td>${fmtInt(r.appointments)}</td>
+      <td>${fmtInt(r.arrivals)}</td>
+      <td>${fmtInt(r.payments)}</td>
+      <td>${fmtRub(r.revenue)}</td>
+      <td>${fmtRub(r.cpl)}</td>
+      <td>${fmtRub(r.cpql)}</td>
+      <td>${fmtRub(r.cpo)}</td>
+      <td>${fmtPct(r.romi)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderStatus(rows, source) {
+  const min = rows.map(r => r.date).sort()[0] || '—';
+  const max = rows.map(r => r.date).sort().slice(-1)[0] || '—';
+  document.getElementById('sourceBadge').textContent = `${source} · ${rows.length} строк · ${min} → ${max}`;
+  document.getElementById('statusText').innerHTML = `Данные загружены. Источник: <b>${esc(source)}</b>. Диапазон данных: <b>${esc(min)}</b> → <b>${esc(max)}</b>.`;
+}
+
+function recompute() {
+  const filtered = applyClientFilters(RAW_ROWS);
+  const compare = compareRows(RAW_ROWS);
+  const granularity = document.getElementById('granularity').value;
+  const aggregated = aggregateRows(filtered, granularity);
+  const currentTotals = totals(filtered);
+  const compareTotals = totals(compare);
+  renderKPIs(currentTotals, compareTotals);
+  renderCharts(aggregated, currentTotals, compareTotals);
+  renderTable(aggregated);
+}
+
+function loadFromRows(rows, source) {
+  RAW_ROWS = rows.map(normalizeRow).filter(r => r.date);
+  fillFilterOptions(RAW_ROWS);
+  setDefaultDates(RAW_ROWS);
+  renderStatus(RAW_ROWS, source);
+  recompute();
+}
+
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const callback = CONFIG.callbackName;
+    const script = document.createElement('script');
+    const cleanup = () => script.remove();
+    window[callback] = payload => { cleanup(); resolve(payload); };
+    script.onerror = () => { cleanup(); reject(new Error('Не удалось загрузить JSONP endpoint.')); };
+    script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callback}`;
+    document.body.appendChild(script);
+  });
+}
+
+async function init() {
+  document.getElementById('applyBtn').addEventListener('click', recompute);
+  if (!CONFIG.endpoint) {
+    if (CONFIG.useDemoWhenEmpty) {
+      loadFromRows(DEMO_ROWS, 'Демо-режим');
+    }
+    return;
+  }
+  try {
+    const payload = await jsonp(CONFIG.endpoint);
+    if (!payload || !Array.isArray(payload.rows)) throw new Error('Пустой или неверный ответ endpoint.');
+    loadFromRows(payload.rows, payload.source || 'Apps Script');
+  } catch (err) {
+    document.getElementById('statusText').textContent = `Ошибка подключения: ${err.message}`;
+    if (CONFIG.useDemoWhenEmpty) loadFromRows(DEMO_ROWS, 'Демо-режим после ошибки');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
