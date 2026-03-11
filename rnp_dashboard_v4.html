@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RNP Dashboard v3 Compact</title>
+  const dates = RAW_ROWS.map(r => r.date).filter(Boolean).sort();
+  setStatus(`Данные: ${RAW_ROWS.length} строк. Диапазон: ${dates[0]} — ${dates[dates.length - 1]}`);
   <script src="https://script.google.com/macros/s/AKfycbx42KtN3tuhtWate6k89qX4VIInoFspSQn6kuuZuXUR5aL7YNTlRp2RMpZA1QY76tpw/exec"></script>
   <style>
     :root{--bg:#0b0f14;--panel:#121923;--panel2:#18212e;--border:#263346;--text:#eef4ff;--muted:#9eb0c8;--blue:#60a5fa;--blue2:#93c5fd;--green:#4ade80;--violet:#a78bfa;--yellow:#fbbf24;--red:#f87171;--radius:16px;--shadow:0 10px 22px rgba(0,0,0,.22)}
