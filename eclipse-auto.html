@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Эклипс Авто — Финансовая модель</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root {
+  --bg: #0a0f15;
+  --surface: #121923;
+  --surface-2: #18212e;
+  --border: #263346;
+  --text: #eef4ff;
+  --muted: #9eb0c8;
+  --primary: #2f6ee5;
+  --blue: #60a5fa;
+  --green: #4ade80;
+  --violet: #a78bfa;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --radius: 12px;
+  --font: Inter, system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; }
+body { display: flex; min-height: 100vh; }
+
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: 200px; padding: 16px 12px;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px; z-index: 10;
+}
+.sidebar .logo { font-size: 16px; font-weight: 800; margin-bottom: 16px; color: var(--blue); }
+.sidebar a {
+  display: block; padding: 8px 10px; border-radius: 8px;
+  color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.sidebar a.active { background: rgba(47,110,229,.15); color: var(--text); }
+.sidebar .status { margin-top: auto; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 10px; }
+
+.main { margin-left: 200px; flex: 1; padding: 16px 20px; max-width: 1400px; }
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; margin-bottom: 14px;
+  background: linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.075); border-radius: var(--radius);
+}
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.topbar-title { font-size: 18px; font-weight: 800; }
+.topbar-scenario { font-size: 12px; color: var(--muted); }
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.btn {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text); font-size: 12px; cursor: pointer; font-family: var(--font);
+}
+.btn:hover { background: rgba(255,255,255,.08); }
+.btn-primary { background: linear-gradient(180deg, var(--primary), #2258b9); border: none; font-weight: 700; }
+.btn-primary:hover { opacity: .9; }
+.btn-scenario { font-size: 11px; }
+.btn-scenario.active { background: rgba(47,110,229,.15); border-color: var(--primary); }
+.toggle { font-size: 11px; color: var(--muted); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+
+.summary-row {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 14px;
+}
+.summary-card {
+  padding: 10px; border-radius: var(--radius);
+  background: linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.075); text-align: center;
+}
+.summary-card .label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.summary-card .value { font-size: 18px; font-weight: 800; }
+
+.content-layout { display: grid; grid-template-columns: 1fr 320px; gap: 14px; }
+
+.block {
+  margin-bottom: 14px; padding: 14px;
+  background: linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.075); border-radius: var(--radius);
+}
+.block-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.block-title { font-size: 14px; font-weight: 700; }
+.block-badge { font-size: 10px; color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 6px; }
+
+.fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fields-2 { grid-template-columns: repeat(2, 1fr); }
+.fields-4 { grid-template-columns: repeat(4, 1fr); }
+.field-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.field-input {
+  width: 100%; height: 34px; padding: 0 8px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 13px; font-family: var(--font);
+}
+.field-input:disabled { opacity: .5; }
+.field-unit { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.field-select { appearance: none; }
+.info-icon { display: inline-flex; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); align-items: center; justify-content: center; font-size: 9px; color: var(--muted); cursor: help; }
+
+.block-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.block-table th { text-align: left; font-weight: 600; color: var(--muted); padding: 6px 4px; border-bottom: 1px solid var(--border); font-size: 11px; }
+.block-table td { padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.03); }
+.block-table .num { text-align: right; }
+.block-table input { width: 80px; height: 28px; padding: 0 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; text-align: right; font-family: var(--font); }
+.block-table .total-row { font-weight: 700; border-top: 2px solid var(--border); }
+.block-table input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+
+.mini-funnel { display: flex; gap: 4px; align-items: end; height: 70px; margin-top: 16px; position: relative; }
+.mini-funnel .mf-bar { flex: 1; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--blue), var(--violet)); min-height: 2px; transition: height .3s; position: relative; cursor: pointer; }
+.mini-funnel .mf-bar:hover { filter: brightness(1.3); }
+.mini-funnel .mf-bar .mf-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--muted); white-space: nowrap; pointer-events: none; }
+.mini-funnel .mf-bar .mf-value { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--text); white-space: nowrap; pointer-events: none; opacity: 1; }
+.mini-funnel .mf-bar .mf-conv { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 9px; font-weight: 600; color: rgba(255,255,255,.8); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+.mini-funnel .mf-bar:hover .mf-conv { opacity: 1; }
+
+.sticky-panel { position: sticky; top: 16px; }
+.sticky-block { margin-bottom: 12px; padding: 12px; background: linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.015)); border: 1px solid rgba(255,255,255,.075); border-radius: var(--radius); }
+.sticky-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.sticky-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+.sticky-row .lbl { color: var(--muted); }
+.sticky-row .val { font-weight: 600; }
+.sticky-divider { border-top: 1px solid var(--border); margin: 4px 0; }
+
+.alert { display: flex; gap: 6px; align-items: flex-start; padding: 6px 8px; border-radius: 6px; font-size: 11px; margin-bottom: 4px; }
+.alert-warn { background: rgba(251,191,36,.08); color: var(--yellow); }
+.alert-err { background: rgba(248,113,113,.08); color: var(--red); }
+.alert-info { background: rgba(96,165,250,.08); color: var(--blue); }
+.alert-ok { background: rgba(74,222,128,.08); color: var(--green); }
+
+.anno { font-size: 11px; color: var(--yellow); background: rgba(251,191,36,.1); padding: 4px 8px; border-radius: 6px; margin-bottom: 6px; display: inline-block; font-weight: 600; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.charts-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+}
+.chart-block {
+  padding: 14px;
+  background: linear-gradient(145deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.075); border-radius: var(--radius);
+}
+.chart-block .block-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+
+.commission-slider { display: flex; align-items: center; gap: 8px; }
+.commission-slider input[type="range"] {
+  flex: 1; height: 6px; -webkit-appearance: none; background: var(--border); border-radius: 3px; outline: none;
+}
+.commission-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer;
+}
+.commission-slider input[type="number"] { width: 70px; }
+
+.timeline-bar {
+  margin-top: 10px; background: var(--surface-2); border-radius: 8px; padding: 10px 14px;
+  position: relative; height: 60px; display: flex; align-items: center;
+}
+.timeline-bar .dots { display: flex; align-items: center; width: 100%; gap: 0; }
+.timeline-bar .dot-item { text-align: center; z-index: 1; }
+.timeline-bar .dot { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto; }
+.timeline-bar .dot-label { font-size: 9px; color: var(--muted); margin-top: 4px; }
+.timeline-bar .line { flex: 1; height: 2px; background: var(--border); }
+
+@media print {
+  .sidebar, .topbar-right, .btn, .anno { display: none !important; }
+  .main { margin-left: 0; }
+  .content-layout { grid-template-columns: 1fr; }
+  .block { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">Эклипс Авто</div>
+  <a data-tab="tab-setup" class="active">Настройка</a>
+  <a data-tab="tab-dashboard">Дашборд</a>
+  <a data-tab="tab-unit">Юнит-экономика</a>
+  <div class="status">
+    <div>Сценарий: <strong id="sidebar-scenario">Базовый</strong></div>
+    <div style="margin-top:4px">Последний расчёт: <span id="sidebar-time">—</span></div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
+      <button class="btn" style="width:100%;font-size:11px" onclick="exportJSON()">Экспорт JSON</button>
+      <button class="btn" style="width:100%;font-size:11px" onclick="exportCSV()">Экспорт CSV</button>
+      <button class="btn" style="width:100%;font-size:11px" onclick="window.print()">Печать / PDF</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div>
+        <div class="topbar-title">Настройка модели</div>
+        <div class="topbar-scenario">Ввод и настройка параметров финансовой модели<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:rgba(96,165,250,.12);color:var(--blue);font-size:11px;font-weight:600">&#128197; Период: 1 месяц</span></div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-scenario active" data-scenario="base">Базовый</button>
+        <button class="btn btn-scenario" data-scenario="growth">Рост</button>
+        <button class="btn btn-scenario" data-scenario="stress">Стресс</button>
+        <button class="btn btn-scenario" data-scenario="custom">Свой</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="toggle">Авторасчёт &#10003;</span>
+      <button class="btn btn-primary" onclick="render()">Пересчитать</button>
+      <button class="btn" onclick="promptSaveScenario()">Сохранить сценарий</button>
+    </div>
+  </div>
+
+  <!-- TAB: SETUP -->
+  <div id="tab-setup" class="tab-content active">
+
+    <!-- SUMMARY CARDS -->
+    <div class="anno">&#8595; Автоматические итоги — не редактируются, обновляются при пересчёте</div>
+    <div class="summary-row">
+      <div class="summary-card"><div class="label">Средний чек</div><div class="value" id="sum-avg-check">—</div></div>
+      <div class="summary-card"><div class="label">Ср. комиссия</div><div class="value" id="sum-commission">—</div></div>
+      <div class="summary-card"><div class="label">Эквайринг</div><div class="value" id="sum-acquiring">—</div></div>
+      <div class="summary-card"><div class="label">Заказов / день</div><div class="value" id="sum-orders-day">—</div></div>
+      <div class="summary-card"><div class="label">Конверсия</div><div class="value" id="sum-conversion">—</div></div>
+      <div class="summary-card"><div class="label">EBITDA</div><div class="value" id="sum-ebitda" style="color:var(--green)">—</div></div>
+      <div class="summary-card"><div class="label">Запас денег</div><div class="value" id="sum-cash-buffer">—</div></div>
+      <div class="summary-card"><div class="label">Точка безубыт.</div><div class="value" id="sum-breakeven">—</div></div>
+    </div>
+
+    <!-- TWO COLUMN -->
+    <div class="content-layout">
+      <div class="left-col">
+
+        <!-- BLOCK A -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">А. Базовые допущения</div>
+            <div class="block-badge">Основные параметры модели</div>
+          </div>
+          <div class="fields">
+            <div class="field" style="opacity:.5">
+              <div class="field-label">Единица модели <span class="info-icon">i</span></div>
+              <input class="field-input" value="1 заказ" disabled>
+            </div>
+            <div class="field">
+              <div class="field-label" style="display:flex;align-items:center;gap:6px">
+                Средний чек заказа <span class="info-icon">i</span>
+                <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);cursor:pointer;white-space:nowrap" title="Авто = средневзвешенный чек из прайс-листа (Блок Г) × структуру заказов (Блок В)">
+                  <input type="checkbox" id="in-avg-check-auto" checked style="accent-color:var(--accent);width:13px;height:13px"> авто
+                </label>
+              </div>
+              <div style="position:relative">
+                <input class="field-input" id="in-avg-check" type="number" value="85000" readonly style="opacity:0.6">
+                <div id="avg-check-auto-hint" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--accent);pointer-events:none">из В+Г</div>
+              </div>
+              <div class="field-unit">&#8381;</div>
+            </div>
+            <div class="field">
+              <div class="field-label" style="display:flex;align-items:center;gap:6px">
+                Комиссия агента <span class="info-icon">i</span>
+                <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);cursor:pointer;white-space:nowrap" title="Авто = средневзвешенная комиссия из прайс-листа (Блок Г) × структуру заказов (Блок В)">
+                  <input type="checkbox" id="in-commission-auto" checked style="accent-color:var(--accent);width:13px;height:13px"> авто
+                </label>
+              </div>
+              <div class="commission-slider">
+                <input type="range" id="in-commission-range" min="5" max="60" value="35" disabled style="opacity:0.6">
+                <input class="field-input" id="in-commission" type="number" value="35" min="0" max="100" style="width:70px" readonly>
+                <div id="commission-auto-hint" style="font-size:10px;color:var(--accent);white-space:nowrap">из В+Г</div>
+              </div>
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Эквайринг</div>
+              <input class="field-input" id="in-acquiring" type="number" value="2.5" step="0.1">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Доля возвратов</div>
+              <input class="field-input" id="in-refund-rate" type="number" value="2" step="0.5">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Предоплата клиента</div>
+              <input class="field-input" id="in-prepayment" type="number" value="100" min="0" max="100">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Частота выплат партнёру</div>
+              <select class="field-input field-select" id="in-payout-freq">
+                <option value="weekly">раз в неделю</option>
+                <option value="daily">ежедневно</option>
+                <option value="bimonthly">2 раза в месяц</option>
+                <option value="monthly">раз в месяц</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Ср. задержка выплаты</div>
+              <input class="field-input" id="in-payout-delay" type="number" value="7">
+              <div class="field-unit">дней</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCK B -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">Б. Воронка продаж</div>
+            <div class="block-badge">Конверсии по этапам</div>
+          </div>
+          <div style="margin-bottom:8px;display:flex;gap:8px">
+            <button class="btn btn-scenario active" style="font-size:11px" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active')">Режим воронки</button>
+            <button class="btn btn-scenario" style="font-size:11px" onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active')">Ручной ввод</button>
+          </div>
+          <div class="fields">
+            <div class="field">
+              <div class="field-label" style="display:flex;align-items:center;gap:6px">
+                Входящих лидов / день
+                <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);cursor:pointer;white-space:nowrap" title="Авто = сумма лидов из каналов ÷ рабочие дни">
+                  <input type="checkbox" id="in-inbound-auto" checked style="accent-color:var(--accent);width:13px;height:13px"> авто
+                </label>
+              </div>
+              <div style="position:relative">
+                <input class="field-input" id="in-inbound" type="number" value="21.4" readonly style="opacity:0.6" step="0.1">
+                <div id="inbound-auto-hint" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--accent);pointer-events:none">из каналов</div>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">Целевые (нужна оклейка)</div>
+              <input class="field-input" id="in-target-rate" type="number" value="70">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Запросили расчёт</div>
+              <input class="field-input" id="in-conv-calc" type="number" value="100">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Оплатили</div>
+              <input class="field-input" id="in-conv-pay" type="number" value="25">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Выполнено (не отменили)</div>
+              <input class="field-input" id="in-conv-fulfill" type="number" value="100">
+              <div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Рабочих дней / месяц</div>
+              <input class="field-input" id="in-work-days" type="number" value="28">
+            </div>
+            <div class="field" style="opacity:.6">
+              <div class="field-label">Заказов в день <span style="font-size:10px;color:var(--blue)">(авто)</span></div>
+              <input class="field-input" id="computed-orders-day" value="—" disabled>
+            </div>
+          </div>
+          <div class="mini-funnel" id="mini-funnel">
+            <div class="mf-bar"><span class="mf-value"></span><span class="mf-conv"></span><span class="mf-label">Лиды</span></div>
+            <div class="mf-bar"><span class="mf-value"></span><span class="mf-conv"></span><span class="mf-label">Целевые</span></div>
+            <div class="mf-bar"><span class="mf-value"></span><span class="mf-conv"></span><span class="mf-label">Расчёт</span></div>
+            <div class="mf-bar"><span class="mf-value"></span><span class="mf-conv"></span><span class="mf-label">Оплата</span></div>
+            <div class="mf-bar"><span class="mf-value"></span><span class="mf-conv"></span><span class="mf-label">Выполн.</span></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:20px">Мини-воронка · наведите для деталей</div>
+        </div>
+
+        <!-- BLOCK C -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">В. Структура заказов</div>
+            <div class="block-badge">Распределение по типам</div>
+          </div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--blue)">По типу услуги</div>
+          <div class="fields fields-4" style="margin-bottom:12px">
+            <div class="field"><div class="field-label">Полная оклейка</div><input class="field-input" id="in-mix-full" type="number" value="82"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Частичная оклейка</div><input class="field-input" id="in-mix-partial" type="number" value="18"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Элементы</div><input class="field-input" id="in-mix-elements" type="number" value="0"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Сумма</div><div id="mix-service-sum" style="font-size:18px;font-weight:800;color:var(--green);margin-top:4px">= 100% &#10003;</div></div>
+          </div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--violet)">По типу авто</div>
+          <div class="fields fields-4" style="margin-bottom:12px">
+            <div class="field"><div class="field-label">Седан</div><input class="field-input" id="in-car-sedan" type="number" value="100"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Кроссовер</div><input class="field-input" id="in-car-cross" type="number" value="0"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Внедорожник</div><input class="field-input" id="in-car-suv" type="number" value="0"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Минивэн</div><input class="field-input" id="in-car-mini" type="number" value="0"><div class="field-unit">%</div></div>
+          </div>
+          <details style="font-size:12px">
+            <summary style="cursor:pointer;color:var(--muted);font-weight:600">Допродажи (развернуть)</summary>
+            <div class="fields" style="margin-top:8px">
+              <div class="field"><div class="field-label">Доля допродаж</div><input class="field-input" id="in-upsell-pen" type="number" value="0"><div class="field-unit">%</div></div>
+              <div class="field"><div class="field-label">Ср. чек допродажи</div><input class="field-input" id="in-upsell-check" type="number" value="8000"><div class="field-unit">&#8381;</div></div>
+              <div class="field"><div class="field-label">Маржа допродажи</div><input class="field-input" id="in-upsell-margin" type="number" value="60"><div class="field-unit">%</div></div>
+            </div>
+          </details>
+        </div>
+
+        <!-- BLOCK D -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">Г. Прайс-лист и матрица услуг</div>
+            <div class="block-badge">Справочник цен</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <button class="btn" style="font-size:11px" onclick="addSkuRow()">+ Добавить услугу</button>
+            <div style="margin-left:auto;display:flex;gap:4px;font-size:10px;align-items:center;color:var(--muted)">
+              Режим: <button class="btn" style="font-size:10px;padding:2px 6px;background:rgba(47,110,229,.15)">от цены</button>
+              <button class="btn" style="font-size:10px;padding:2px 6px">от выплаты</button>
+              <button class="btn" style="font-size:10px;padding:2px 6px">от %</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+          <table class="block-table" id="sku-table">
+            <thead><tr>
+              <th>Категория</th><th>Тип авто</th><th>Услуга</th><th class="num">Цена клиенту</th><th class="num">Партнёру</th><th class="num">Комиссия</th><th class="num">Наценка</th><th class="num">Доля</th><th>Вкл</th>
+            </tr></thead>
+            <tbody id="sku-tbody"></tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="3">Средневзвешенное</td>
+                <td class="num" id="sku-avg-price">—</td>
+                <td class="num" id="sku-avg-payout">—</td>
+                <td class="num" id="sku-avg-commission" style="color:var(--green)">—</td>
+                <td class="num" id="sku-avg-pct">—</td>
+                <td class="num" id="sku-total-share">—</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+          </div>
+        </div>
+
+        <!-- BLOCK E -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">Д. Каналы привлечения</div>
+            <div class="block-badge">Источники лидов</div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;margin-bottom:8px">&#9889; Бюджеты каналов — переменные расходы на рекламу. Фикс. зарплата маркетолога &#8594; блок Ж.</div>
+          <div style="overflow-x:auto">
+          <table class="block-table" id="channel-table">
+            <thead><tr>
+              <th>Канал</th><th class="num">Лидов/мес</th><th class="num">Бюджет</th><th class="num">Ст-ть лида</th><th class="num">Конв.</th><th class="num">Оплат</th><th class="num">Ст-ть клиента</th><th class="num">Ср. чек</th><th class="num">Вклад</th><th>Вкл</th>
+            </tr></thead>
+            <tbody id="channel-tbody"></tbody>
+            <tfoot>
+              <tr class="total-row" id="channel-footer">
+                <td>Итого</td><td class="num" id="ch-total-leads">—</td><td class="num" id="ch-total-budget">—</td><td class="num" id="ch-total-cpl">—</td><td class="num">—</td><td class="num" id="ch-total-paid">—</td><td class="num" id="ch-total-cac">—</td><td class="num">—</td><td class="num" id="ch-total-revenue" style="color:var(--green)">—</td><td></td>
+              </tr>
+            </tfoot>
+          </table>
+          </div>
+        </div>
+
+        <!-- BLOCK F -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">Е. Налоги</div>
+            <div class="block-badge">Налоговая логика &middot; ООО на ОСНО</div>
+          </div>
+          <div class="fields" style="margin-bottom:10px">
+            <div class="field" style="opacity:.5">
+              <div class="field-label">Юр. форма</div>
+              <input class="field-input" value="ООО на ОСНО" disabled>
+            </div>
+            <div class="field">
+              <div class="field-label">Режим расчёта</div>
+              <select class="field-input field-select" id="in-tax-mode">
+                <option value="management">Управленческий</option>
+                <option value="accounting">Бухгалтерский</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Ставка НДС</div>
+              <input class="field-input" id="in-vat" type="number" value="20"><div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Налог на прибыль</div>
+              <input class="field-input" id="in-profit-tax" type="number" value="20"><div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Страховые взносы</div>
+              <input class="field-input" id="in-insurance" type="number" value="30.2" step="0.1"><div class="field-unit">%</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Прочие налоги</div>
+              <input class="field-input" id="in-other-tax" type="number" value="0"><div class="field-unit">%</div>
+            </div>
+          </div>
+          <div id="tax-preview" style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;font-family:monospace;color:var(--text)">
+          </div>
+        </div>
+
+        <!-- BLOCK G -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">Ж. Постоянные расходы</div>
+            <div class="block-badge">Ежемесячные фиксированные затраты</div>
+          </div>
+          <table class="block-table" id="fc-table">
+            <thead><tr><th>Статья</th><th class="num">Сумма / мес</th><th>Тип</th><th>Комментарий</th></tr></thead>
+            <tbody id="fc-tbody"></tbody>
+            <tfoot>
+              <tr class="total-row"><td>Итого постоянных</td><td class="num" id="fc-total" style="color:var(--red)">—</td><td colspan="2"></td></tr>
+              <tr><td style="color:var(--muted)">Пост. на заказ</td><td class="num" id="fc-per-order">—</td><td colspan="2"></td></tr>
+              <tr><td style="color:var(--yellow)">Точка безубыточности</td><td class="num" id="fc-breakeven" style="font-weight:700">—</td><td colspan="2"></td></tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- BLOCK H -->
+        <div class="block">
+          <div class="block-header">
+            <div class="block-title">З. Движение денежных средств</div>
+            <div class="block-badge">Сроки и тайминг платежей</div>
+          </div>
+          <div class="fields fields-4">
+            <div class="field"><div class="field-label">Предоплата клиента</div><input class="field-input" id="in-cf-prepay" type="number" value="100"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Моментальное зачисление</div><input class="field-input" id="in-cf-instant" type="number" value="95"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Дней до выполнения</div><input class="field-input" id="in-cf-fulfill-days" type="number" value="3"><div class="field-unit">дней</div></div>
+            <div class="field"><div class="field-label">Дней до выплаты партнёру</div><input class="field-input" id="in-cf-payout-days" type="number" value="7"><div class="field-unit">дней</div></div>
+            <div class="field"><div class="field-label">Частота выплат</div><select class="field-input field-select" id="in-cf-payout-freq"><option value="weekly">раз в неделю</option><option value="daily">ежедневно</option><option value="bimonthly">2 раза в месяц</option><option value="monthly">раз в месяц</option></select></div>
+            <div class="field"><div class="field-label">Задержка возврата</div><input class="field-input" id="in-cf-refund-delay" type="number" value="14"><div class="field-unit">дней</div></div>
+            <div class="field"><div class="field-label">Резерв на возвраты</div><input class="field-input" id="in-cf-refund-reserve" type="number" value="3"><div class="field-unit">%</div></div>
+            <div class="field"><div class="field-label">Мин. денежный запас</div><input class="field-input" id="in-cf-min-buffer" type="number" value="200000"><div class="field-unit">&#8381;</div></div>
+          </div>
+          <div class="timeline-bar">
+            <div class="dots">
+              <div class="dot-item"><div class="dot" style="background:var(--green)"></div><div class="dot-label">День 0<br>Оплата</div></div>
+              <div class="line"></div>
+              <div class="dot-item"><div class="dot" style="background:var(--blue)"></div><div class="dot-label">День <span id="tl-fulfill">3</span><br>Выполнение</div></div>
+              <div class="line" style="flex:1.5"></div>
+              <div class="dot-item"><div class="dot" style="background:var(--red)"></div><div class="dot-label">День <span id="tl-payout">7</span><br>Выплата партнёру</div></div>
+              <div class="line" style="flex:2"></div>
+              <div class="dot-item"><div class="dot" style="background:var(--yellow)"></div><div class="dot-label">День 30<br>Налоги/Пост.</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /left-col -->
+
+      <!-- RIGHT: STICKY PREVIEW -->
+      <div class="sticky-panel">
+        <div class="sticky-block">
+          <div class="sticky-title">Текущий расчёт (мес.)</div>
+          <div class="sticky-row"><span class="lbl">Оборот (GMV)</span><span class="val" id="sticky-gmv">—</span></div>
+          <div class="sticky-row"><span class="lbl">&minus;Эквайринг</span><span class="val" id="sticky-acquiring" style="color:var(--red)">—</span></div>
+          <div class="sticky-row"><span class="lbl">&minus;Выплаты партнёрам</span><span class="val" id="sticky-partner-pay" style="color:var(--red)">—</span></div>
+          <div class="sticky-row" style="font-weight:700"><span class="lbl">= Выручка агента</span><span class="val" id="sticky-revenue" style="color:var(--green)">—</span></div>
+          <div class="sticky-row"><span class="lbl">&minus;Налоги</span><span class="val" id="sticky-taxes" style="color:var(--red)">—</span></div>
+          <div class="sticky-row"><span class="lbl">&minus;Возвраты</span><span class="val" id="sticky-losses" style="color:var(--red)">—</span></div>
+          <div class="sticky-row"><span class="lbl">+Допродажи</span><span class="val" id="sticky-upsell" style="color:var(--green)">—</span></div>
+          <div class="sticky-divider"></div>
+          <div class="sticky-row"><span class="lbl">Маржинальная прибыль</span><span class="val" id="sticky-contribution" style="color:var(--green)">—</span></div>
+          <div class="sticky-row"><span class="lbl">&minus;Постоянные расходы</span><span class="val" id="sticky-fixed" style="color:var(--red)">—</span></div>
+          <div class="sticky-row" style="border-top:2px solid var(--border);padding-top:6px;margin-top:4px"><span class="lbl">EBITDA</span><span class="val" id="sticky-ebitda" style="font-size:16px;color:var(--green)">—</span></div>
+          <div class="sticky-row"><span class="lbl">Чистая прибыль</span><span class="val" id="sticky-net-profit">—</span></div>
+          <div class="sticky-row"><span class="lbl">Чистый денежный поток</span><span class="val" id="sticky-net-cash">—</span></div>
+        </div>
+        <div class="sticky-block">
+          <div class="sticky-title">Предупреждения</div>
+          <div id="alerts-container"></div>
+        </div>
+        <div class="sticky-block">
+          <div class="sticky-title">Экспресс-анализ чувствительности</div>
+          <div id="sensitivity-container"></div>
+        </div>
+      </div>
+    </div><!-- /content-layout -->
+  </div><!-- /tab-setup -->
+
+  <!-- TAB: DASHBOARD -->
+  <div id="tab-dashboard" class="tab-content">
+    <div class="charts-grid">
+      <div class="chart-block" style="grid-column:span 2"><div class="block-title">Водопад P&L</div><div id="chart-waterfall" style="height:350px"></div></div>
+      <div class="chart-block"><div class="block-title">Воронка продаж</div><div id="chart-funnel" style="height:350px"></div></div>
+      <div class="chart-block"><div class="block-title">Каналы привлечения</div><div id="chart-channels" style="height:300px"></div></div>
+      <div class="chart-block"><div class="block-title">Денежный поток (12 мес)</div><div id="chart-cashflow" style="height:300px"></div></div>
+      <div class="chart-block"><div class="block-title">Чувствительность EBITDA</div><div id="chart-tornado" style="height:300px"></div></div>
+    </div>
+  </div>
+
+  <!-- TAB: UNIT ECONOMICS (placeholder) -->
+  <div id="tab-unit" class="tab-content">
+    <div class="block">
+      <div class="block-header"><div class="block-title">Юнит-экономика</div></div>
+      <p style="color:var(--muted)">Раздел в разработке. Данные из модели доступны на вкладке «Настройка» и «Дашборд».</p>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ===================== STATE =====================
+const DEFAULT_STATE = {
+  avgCheck: 82000, commissionPct: 15.5, acquiringPct: 2.5,
+  refundRate: 2,
+  prepayment: 100, payoutFreq: 'weekly', payoutDelay: 7,
+  inboundPerDay: 15, targetRate: 70, convCalc: 100, convPay: 25, convFulfill: 100, workDays: 28,
+  mixFull: 82, mixPartial: 18, mixElements: 0,
+  carSedan: 100, carCross: 0, carSuv: 0, carMini: 0,
+  upsellPen: 0, upsellCheck: 8000, upsellMargin: 60,
+  skus: [
+    { id:1, cat:'full', carType:'sedan', name:'ППФ полная седан', price:92040, payout:78000, share:10, active:true },
+    { id:2, cat:'full', carType:'cross', name:'ППФ полная кросс', price:110920, payout:94000, share:10, active:true },
+    { id:3, cat:'full', carType:'suv', name:'ППФ полная внедорожник', price:129800, payout:110000, share:10, active:true },
+    { id:4, cat:'partial', carType:'sedan', name:'ППФ капот+бампер седан', price:35380, payout:29000, share:10, active:true },
+    { id:5, cat:'partial', carType:'cross', name:'ППФ капот+бампер кросс', price:43920, payout:36000, share:10, active:true },
+    { id:6, cat:'partial', carType:'suv', name:'ППФ капот+бампер внедор.', price:51240, payout:42000, share:10, active:true },
+    { id:7, cat:'elements', carType:'any', name:'ППФ зеркала+ручки', price:10980, payout:9000, share:10, active:true },
+    { id:8, cat:'elements', carType:'any', name:'ППФ пороги', price:19520, payout:16000, share:10, active:true },
+    { id:9, cat:'elements', carType:'any', name:'ППФ фары', price:8540, payout:7000, share:10, active:true },
+  ],
+  channels: [
+    { id:'direct', name:'Перфоманс', leads:420, budget:600000, conv:25, avgCheck:82000, active:true },
+    { id:'organic', name:'Органика (SEO)', leads:0, budget:0, conv:0, avgCheck:0, active:false },
+    { id:'referrals', name:'Рекомендации', leads:0, budget:0, conv:0, avgCheck:0, active:false },
+    { id:'partners', name:'Партнёры', leads:0, budget:0, conv:0, avgCheck:0, active:false },
+    { id:'content', name:'Контент', leads:0, budget:0, conv:0, avgCheck:0, active:false },
+  ],
+  vatRate: 20, profitTaxRate: 20, insuranceRate: 30.2, otherTaxRate: 0, taxMode: 'management',
+  fixedCosts: [
+    { id:'payroll', name:'Зарплата', amount:0, type:'fixed' },
+    { id:'marketing', name:'Маркетинг (фикс)', amount:0, type:'fixed' },
+    { id:'crm', name:'CRM-система', amount:0, type:'fixed' },
+    { id:'phone', name:'Телефония', amount:0, type:'fixed' },
+    { id:'accounting', name:'Бухгалтерия', amount:0, type:'fixed' },
+    { id:'rent', name:'Аренда', amount:0, type:'fixed' },
+    { id:'debt', name:'Обслуживание долга', amount:0, type:'fixed' },
+    { id:'other', name:'Прочее', amount:0, type:'fixed' },
+  ],
+  cfPrepay: 100, cfInstant: 95, cfFulfillDays: 3, cfPayoutDays: 7,
+  cfPayoutFreq: 'weekly', cfRefundDelay: 14, cfRefundReserve: 3, cfMinBuffer: 200000,
+};
+
+const SCENARIOS = {
+  base: null,
+  growth: {
+    avgCheck: 95000, commissionPct: 38, inboundPerDay: 50, convPay: 35, convFulfill: 96,
+    upsellPen: 25, upsellCheck: 12000
+  },
+  stress: {
+    avgCheck: 70000, commissionPct: 28, inboundPerDay: 15, convPay: 20, convFulfill: 88,
+    refundRate: 5
+  },
+};
+
+let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let lastResults = null;
+
+// ===================== FORMATTING =====================
+function fmt(n, decimals) {
+  if (n == null || !isFinite(n)) return '—';
+  const d = decimals != null ? decimals : 0;
+  return n.toLocaleString('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+function fmtK(n) {
+  if (n == null || !isFinite(n)) return '—';
+  if (Math.abs(n) >= 1000000) return fmt(n/1000000, 1) + 'M';
+  if (Math.abs(n) >= 1000) return fmt(n/1000, 0) + 'K';
+  return fmt(n, 0);
+}
+function fmtR(n) { return fmt(n, 0) + ' \u20BD'; }
+function fmtKR(n) { return fmtK(n) + ' \u20BD'; }
+function fmtPct(n, d) { return fmt(n, d != null ? d : 1) + '%'; }
+
+// ===================== RECALC ENGINE =====================
+function recalc(s) {
+  const r = {};
+
+  // Funnel
+  r.ordersPerDay = s.inboundPerDay * (s.targetRate/100) * (s.convCalc/100) * (s.convPay/100);
+  r.fulfilledPerDay = r.ordersPerDay * (s.convFulfill/100);
+  r.ordersPerMonth = r.fulfilledPerDay * s.workDays;
+  r.funnelSteps = [
+    { name: 'Лиды', value: s.inboundPerDay * s.workDays },
+    { name: 'Целевые', value: s.inboundPerDay * (s.targetRate/100) * s.workDays },
+    { name: 'Расчёт', value: s.inboundPerDay * (s.targetRate/100) * (s.convCalc/100) * s.workDays },
+    { name: 'Оплата', value: r.ordersPerDay * s.workDays },
+    { name: 'Выполнение', value: r.ordersPerMonth },
+  ];
+
+  // SKU weighted avg using Block В mix percentages
+  const activeSkus = s.skus.filter(x => x.active);
+  const serviceMix = { full: s.mixFull, partial: s.mixPartial, elements: s.mixElements };
+  const carMix = { sedan: s.carSedan, cross: s.carCross, suv: s.carSuv, mini: s.carMini };
+
+  // Compute effective share for each SKU from service mix × car mix
+  const effectiveShares = activeSkus.map(sku => {
+    if (sku.carType === 'any') {
+      // Elements: distribute category mix among same-category 'any' SKUs by relative share
+      const sameGroup = activeSkus.filter(x => x.cat === sku.cat && x.carType === 'any');
+      const groupShareTotal = sameGroup.reduce((a, x) => a + x.share, 0) || 1;
+      return (serviceMix[sku.cat] || 0) * (sku.share / groupShareTotal);
+    } else {
+      // Specific car type: serviceMix × carMix (normalized for available car types in category)
+      const catSpecific = activeSkus.filter(x => x.cat === sku.cat && x.carType !== 'any');
+      const availTypes = [...new Set(catSpecific.map(x => x.carType))];
+      const totalCarMix = availTypes.reduce((a, ct) => a + (carMix[ct] || 0), 0) || 1;
+      const carWeight = (carMix[sku.carType] || 0) / totalCarMix;
+      // If multiple SKUs share same cat+carType, distribute by relative share
+      const sameCatCar = catSpecific.filter(x => x.carType === sku.carType);
+      const catCarShareTotal = sameCatCar.reduce((a, x) => a + x.share, 0) || 1;
+      return (serviceMix[sku.cat] || 0) * carWeight * (sku.share / catCarShareTotal);
+    }
+  });
+
+  const totalEffShare = effectiveShares.reduce((a, x) => a + x, 0) || 1;
+  r.weightedPrice = activeSkus.reduce((a, x, i) => a + x.price * effectiveShares[i], 0) / totalEffShare;
+  r.weightedPayout = activeSkus.reduce((a, x, i) => a + x.payout * effectiveShares[i], 0) / totalEffShare;
+  r.weightedCommission = r.weightedPrice - r.weightedPayout;
+  r.weightedCommissionPct = r.weightedPrice > 0 ? (r.weightedCommission / r.weightedPrice * 100) : 0;
+  r.weightedMarkupPct = r.weightedPayout > 0 ? (r.weightedCommission / r.weightedPayout * 100) : 0;
+  r.skuTotalShare = effectiveShares.reduce((a, x) => a + x, 0);
+  r.effectiveShares = effectiveShares;
+
+  const effectiveCheck = s.avgCheck;
+  const effectiveCommPct = s.commissionPct / 100;
+  const effectivePayout = effectiveCheck * (1 - effectiveCommPct);
+
+  // Revenue
+  r.gmv = effectiveCheck * r.ordersPerMonth;
+  r.partnerPayouts = effectivePayout * r.ordersPerMonth;
+  r.agentRevenue = r.gmv - r.partnerPayouts;
+  r.acquiringCost = r.gmv * (s.acquiringPct / 100);
+
+  // Losses
+  r.refundCost = r.gmv * (s.refundRate / 100);
+  r.totalLosses = r.refundCost;
+
+  // Margin base
+  r.marginBase = r.agentRevenue - r.acquiringCost;
+
+  // Upsell
+  r.upsellRevenue = r.ordersPerMonth * (s.upsellPen/100) * s.upsellCheck * (s.upsellMargin/100);
+
+  // Insurance on payroll
+  const payrollCost = s.fixedCosts.find(x => x.id === 'payroll')?.amount || 0;
+  r.insuranceCost = payrollCost * (s.insuranceRate / 100);
+
+  // Fixed costs
+  r.totalFixed = s.fixedCosts.reduce((a,x) => a + x.amount, 0);
+  r.totalFixedWithInsurance = r.totalFixed + r.insuranceCost;
+
+  // Input VAT from expenses (services with VAT - marketing, CRM, phone, etc.)
+  // Assume ~60% of fixed costs (excl payroll) come with VAT invoices
+  const fixedExclPayroll = r.totalFixed - payrollCost;
+  r.inputVAT = fixedExclPayroll * s.vatRate / (100 + s.vatRate);
+  // Also add channel budgets input VAT (ad platforms charge with VAT)
+  const channelBudgetTotal = s.channels.filter(c => c.active).reduce((a,c) => a + c.budget, 0);
+  r.inputVATChannels = channelBudgetTotal * s.vatRate / (100 + s.vatRate);
+  r.totalInputVAT = r.inputVAT + r.inputVATChannels;
+
+  // Output VAT on agent fee
+  r.outputVAT = r.marginBase * s.vatRate / (100 + s.vatRate);
+  // VAT to pay = output - input
+  r.vatAmount = Math.max(0, r.outputVAT - r.totalInputVAT);
+
+  // P&L waterfall
+  r.contribution = r.marginBase - r.vatAmount - r.totalLosses + r.upsellRevenue;
+  r.ebitda = r.contribution - r.totalFixedWithInsurance;
+  // Profit tax on EBITDA (pre-tax profit)
+  r.profitTaxBase = Math.max(0, r.ebitda);
+  r.profitTax = r.profitTaxBase * (s.profitTaxRate / 100);
+  r.totalTaxes = r.vatAmount + r.profitTax;
+  r.netProfit = r.ebitda - r.profitTax;
+  r.ebitdaMargin = r.gmv > 0 ? (r.ebitda / r.gmv * 100) : 0;
+  r.effectiveTaxRate = r.marginBase > 0 ? (r.totalTaxes / r.marginBase * 100) : 0;
+
+  // Break-even
+  r.marginPerOrder = r.ordersPerMonth > 0 ? r.contribution / r.ordersPerMonth : 0;
+  r.breakEvenOrders = r.marginPerOrder > 0 ? Math.ceil(r.totalFixedWithInsurance / r.marginPerOrder) : Infinity;
+
+  // Fixed cost load
+  r.fixedCostLoad = r.agentRevenue > 0 ? (r.totalFixedWithInsurance / r.agentRevenue * 100) : 0;
+
+  // Cashflow
+  r.cashIn = r.gmv * (s.cfPrepay/100) * (s.cfInstant/100);
+  r.cashOutPartner = r.partnerPayouts;
+  r.cashOutFixed = r.totalFixedWithInsurance;
+  r.cashOutTaxes = r.totalTaxes;
+  r.netCash = r.cashIn - r.cashOutPartner - r.cashOutFixed - r.cashOutTaxes - r.acquiringCost;
+  r.cashBuffer = r.netCash;
+  r.cashBufferMonths = r.totalFixedWithInsurance > 0 ? (s.cfMinBuffer / r.totalFixedWithInsurance) : 0;
+
+  // 12-month
+  r.cashflowTimeline = [];
+  let runningCash = s.cfMinBuffer;
+  for (let m = 1; m <= 12; m++) {
+    runningCash += r.netCash;
+    r.cashflowTimeline.push({ month: m, cash: runningCash, minBuffer: s.cfMinBuffer });
+  }
+
+  // Channels
+  r.channelStats = s.channels.filter(c => c.active).map(c => {
+    const paid = Math.round(c.leads * (c.conv/100));
+    const cpl = c.leads > 0 ? c.budget / c.leads : 0;
+    const cac = paid > 0 ? c.budget / paid : 0;
+    const revenue = paid * effectiveCheck * effectiveCommPct;
+    return { ...c, paid, cpl, cac, revenue };
+  });
+  r.totalChannelBudget = r.channelStats.reduce((a,c) => a + c.budget, 0);
+  r.totalChannelLeads = r.channelStats.reduce((a,c) => a + c.leads, 0);
+  r.totalChannelPaid = r.channelStats.reduce((a,c) => a + c.paid, 0);
+
+  // Per-order
+  r.revenuePerOrder = r.ordersPerMonth > 0 ? r.agentRevenue / r.ordersPerMonth : 0;
+  r.costPerOrder = r.ordersPerMonth > 0 ? (r.acquiringCost + r.totalTaxes + r.totalLosses) / r.ordersPerMonth : 0;
+  r.fixedPerOrder = r.ordersPerMonth > 0 ? r.totalFixedWithInsurance / r.ordersPerMonth : 0;
+  r.profitPerOrder = r.revenuePerOrder - r.costPerOrder - r.fixedPerOrder;
+
+  // End-to-end conversion
+  r.endToEndConv = s.inboundPerDay > 0 ? (r.fulfilledPerDay / s.inboundPerDay * 100) : 0;
+
+  return r;
+}
+
+function calcSensitivity(s, baseR) {
+  function delta(overrides) {
+    const altS = JSON.parse(JSON.stringify(s));
+    Object.assign(altS, overrides);
+    return recalc(altS).ebitda - baseR.ebitda;
+  }
+  return {
+    commPlus5: delta({ commissionPct: s.commissionPct + 5 }),
+    commMinus5: delta({ commissionPct: s.commissionPct - 5 }),
+    acqPlus1: delta({ acquiringPct: s.acquiringPct + 1 }),
+    acqMinus1: delta({ acquiringPct: s.acquiringPct - 1 }),
+    convPlus10: delta({ convPay: Math.min(100, s.convPay + 10) }),
+    convMinus10: delta({ convPay: Math.max(0, s.convPay - 10) }),
+    checkPlus10k: delta({ avgCheck: s.avgCheck + 10000 }),
+    checkMinus10k: delta({ avgCheck: s.avgCheck - 10000 }),
+    fixedCostLoad: baseR.fixedCostLoad,
+    fullWrapMarginImpact: (() => {
+      const fullSkus = s.skus.filter(x => x.cat === 'full' && x.active);
+      if (!fullSkus.length) return 0;
+      const avgMargin = fullSkus.reduce((a,x) => a + (x.price - x.payout)/x.price*100, 0) / fullSkus.length;
+      return avgMargin;
+    })(),
+  };
+}
+
+// ===================== WEIGHTED AVG FROM MIX =====================
+function computeWeightedFromMix(s) {
+  const activeSkus = s.skus.filter(x => x.active);
+  if (!activeSkus.length) return { price: 0, payout: 0, commPct: 0 };
+
+  const serviceMix = { full: s.mixFull, partial: s.mixPartial, elements: s.mixElements };
+  const carMix = { sedan: s.carSedan, cross: s.carCross, suv: s.carSuv, mini: s.carMini };
+
+  const shares = activeSkus.map(sku => {
+    if (sku.carType === 'any') {
+      const sameGroup = activeSkus.filter(x => x.cat === sku.cat && x.carType === 'any');
+      const groupTotal = sameGroup.reduce((a, x) => a + x.share, 0) || 1;
+      return (serviceMix[sku.cat] || 0) * (sku.share / groupTotal);
+    } else {
+      const catSpecific = activeSkus.filter(x => x.cat === sku.cat && x.carType !== 'any');
+      const availTypes = [...new Set(catSpecific.map(x => x.carType))];
+      const totalCarMix = availTypes.reduce((a, ct) => a + (carMix[ct] || 0), 0) || 1;
+      const carWeight = (carMix[sku.carType] || 0) / totalCarMix;
+      const sameCatCar = catSpecific.filter(x => x.carType === sku.carType);
+      const catCarTotal = sameCatCar.reduce((a, x) => a + x.share, 0) || 1;
+      return (serviceMix[sku.cat] || 0) * carWeight * (sku.share / catCarTotal);
+    }
+  });
+
+  const totalShare = shares.reduce((a, x) => a + x, 0) || 1;
+  const price = activeSkus.reduce((a, x, i) => a + x.price * shares[i], 0) / totalShare;
+  const payout = activeSkus.reduce((a, x, i) => a + x.payout * shares[i], 0) / totalShare;
+  const comm = price - payout;
+  const commPct = price > 0 ? (comm / price * 100) : 0;
+  return { price, payout, comm, commPct };
+}
+
+// ===================== READ STATE =====================
+function readState() {
+  state.avgCheck = parseFloat(document.getElementById('in-avg-check').value) || 0;
+  state.commissionPct = parseFloat(document.getElementById('in-commission').value) || 0;
+  state.acquiringPct = parseFloat(document.getElementById('in-acquiring').value) || 0;
+  state.refundRate = parseFloat(document.getElementById('in-refund-rate').value) || 0;
+  state.prepayment = parseFloat(document.getElementById('in-prepayment').value) || 0;
+  state.payoutFreq = document.getElementById('in-payout-freq').value;
+  state.payoutDelay = parseFloat(document.getElementById('in-payout-delay').value) || 0;
+
+  state.targetRate = parseFloat(document.getElementById('in-target-rate').value) || 0;
+  state.convCalc = parseFloat(document.getElementById('in-conv-calc').value) || 0;
+  state.convPay = parseFloat(document.getElementById('in-conv-pay').value) || 0;
+  state.convFulfill = parseFloat(document.getElementById('in-conv-fulfill').value) || 0;
+  state.workDays = parseFloat(document.getElementById('in-work-days').value) || 0;
+
+  state.mixFull = parseFloat(document.getElementById('in-mix-full').value) || 0;
+  state.mixPartial = parseFloat(document.getElementById('in-mix-partial').value) || 0;
+  state.mixElements = parseFloat(document.getElementById('in-mix-elements').value) || 0;
+  state.carSedan = parseFloat(document.getElementById('in-car-sedan').value) || 0;
+  state.carCross = parseFloat(document.getElementById('in-car-cross').value) || 0;
+  state.carSuv = parseFloat(document.getElementById('in-car-suv').value) || 0;
+  state.carMini = parseFloat(document.getElementById('in-car-mini').value) || 0;
+
+  state.upsellPen = parseFloat(document.getElementById('in-upsell-pen').value) || 0;
+  state.upsellCheck = parseFloat(document.getElementById('in-upsell-check').value) || 0;
+  state.upsellMargin = parseFloat(document.getElementById('in-upsell-margin').value) || 0;
+
+  state.vatRate = parseFloat(document.getElementById('in-vat').value) || 0;
+  state.profitTaxRate = parseFloat(document.getElementById('in-profit-tax').value) || 0;
+  state.insuranceRate = parseFloat(document.getElementById('in-insurance').value) || 0;
+  state.otherTaxRate = parseFloat(document.getElementById('in-other-tax').value) || 0;
+  state.taxMode = document.getElementById('in-tax-mode').value;
+
+  state.cfPrepay = parseFloat(document.getElementById('in-cf-prepay').value) || 0;
+  state.cfInstant = parseFloat(document.getElementById('in-cf-instant').value) || 0;
+  state.cfFulfillDays = parseFloat(document.getElementById('in-cf-fulfill-days').value) || 0;
+  state.cfPayoutDays = parseFloat(document.getElementById('in-cf-payout-days').value) || 0;
+  state.cfPayoutFreq = document.getElementById('in-cf-payout-freq').value;
+  state.cfRefundDelay = parseFloat(document.getElementById('in-cf-refund-delay').value) || 0;
+  state.cfRefundReserve = parseFloat(document.getElementById('in-cf-refund-reserve').value) || 0;
+  state.cfMinBuffer = parseFloat(document.getElementById('in-cf-min-buffer').value) || 0;
+
+  readSkuTable();
+  readChannelTable();
+  readFixedCosts();
+
+  // Auto-link: Block В + Block Г → avg check & commission
+  const avgCheckAuto = document.getElementById('in-avg-check-auto').checked;
+  const commissionAuto = document.getElementById('in-commission-auto').checked;
+  if (avgCheckAuto || commissionAuto) {
+    const w = computeWeightedFromMix(state);
+    if (avgCheckAuto) {
+      state.avgCheck = Math.round(w.price);
+      document.getElementById('in-avg-check').value = state.avgCheck;
+    }
+    if (commissionAuto) {
+      state.commissionPct = Math.round(w.commPct * 10) / 10;
+      document.getElementById('in-commission').value = state.commissionPct;
+      document.getElementById('in-commission-range').value = Math.round(state.commissionPct);
+    }
+  }
+
+  // Auto-link: channels → inbound leads per day
+  const inboundAuto = document.getElementById('in-inbound-auto').checked;
+  if (inboundAuto) {
+    const totalActiveLeads = state.channels.filter(c => c.active).reduce((a, c) => a + c.leads, 0);
+    const wd = state.workDays || 22;
+    state.inboundPerDay = Math.round((totalActiveLeads / wd) * 10) / 10;
+    document.getElementById('in-inbound').value = state.inboundPerDay;
+  } else {
+    state.inboundPerDay = parseFloat(document.getElementById('in-inbound').value) || 0;
+  }
+}
+
+function writeStateToDOM() {
+  document.getElementById('in-avg-check').value = state.avgCheck;
+  updateAvgCheckAutoUI();
+  document.getElementById('in-commission').value = state.commissionPct;
+  document.getElementById('in-commission-range').value = state.commissionPct;
+  updateCommissionAutoUI();
+  document.getElementById('in-acquiring').value = state.acquiringPct;
+  document.getElementById('in-refund-rate').value = state.refundRate;
+  document.getElementById('in-prepayment').value = state.prepayment;
+  document.getElementById('in-payout-freq').value = state.payoutFreq;
+  document.getElementById('in-payout-delay').value = state.payoutDelay;
+
+  document.getElementById('in-inbound').value = state.inboundPerDay;
+  updateInboundAutoUI();
+  document.getElementById('in-target-rate').value = state.targetRate;
+  document.getElementById('in-conv-calc').value = state.convCalc;
+  document.getElementById('in-conv-pay').value = state.convPay;
+  document.getElementById('in-conv-fulfill').value = state.convFulfill;
+  document.getElementById('in-work-days').value = state.workDays;
+
+  document.getElementById('in-mix-full').value = state.mixFull;
+  document.getElementById('in-mix-partial').value = state.mixPartial;
+  document.getElementById('in-mix-elements').value = state.mixElements;
+  document.getElementById('in-car-sedan').value = state.carSedan;
+  document.getElementById('in-car-cross').value = state.carCross;
+  document.getElementById('in-car-suv').value = state.carSuv;
+  document.getElementById('in-car-mini').value = state.carMini;
+
+  document.getElementById('in-upsell-pen').value = state.upsellPen;
+  document.getElementById('in-upsell-check').value = state.upsellCheck;
+  document.getElementById('in-upsell-margin').value = state.upsellMargin;
+
+  document.getElementById('in-vat').value = state.vatRate;
+  document.getElementById('in-profit-tax').value = state.profitTaxRate;
+  document.getElementById('in-insurance').value = state.insuranceRate;
+  document.getElementById('in-other-tax').value = state.otherTaxRate;
+  document.getElementById('in-tax-mode').value = state.taxMode;
+
+  document.getElementById('in-cf-prepay').value = state.cfPrepay;
+  document.getElementById('in-cf-instant').value = state.cfInstant;
+  document.getElementById('in-cf-fulfill-days').value = state.cfFulfillDays;
+  document.getElementById('in-cf-payout-days').value = state.cfPayoutDays;
+  document.getElementById('in-cf-payout-freq').value = state.cfPayoutFreq;
+  document.getElementById('in-cf-refund-delay').value = state.cfRefundDelay;
+  document.getElementById('in-cf-refund-reserve').value = state.cfRefundReserve;
+  document.getElementById('in-cf-min-buffer').value = state.cfMinBuffer;
+
+  renderSkuTable();
+  renderChannelTable();
+  renderFixedCosts();
+}
+
+// ===================== SKU TABLE =====================
+function renderSkuTable() {
+  const tbody = document.getElementById('sku-tbody');
+  const catNames = { full: 'Полная', partial: 'Частичная', elements: 'Элементы' };
+  const carNames = { sedan: 'Седан', cross: 'Кроссовер', suv: 'Внедорожник', mini: 'Минивэн', any: 'Любой' };
+
+  // Compute effective shares from Block В (service mix × car mix)
+  const activeSkus = state.skus.filter(x => x.active);
+  const serviceMix = { full: state.mixFull, partial: state.mixPartial, elements: state.mixElements };
+  const carMix = { sedan: state.carSedan, cross: state.carCross, suv: state.carSuv, mini: state.carMini };
+  const effShares = state.skus.map(sku => {
+    if (!sku.active) return 0;
+    if (sku.carType === 'any') {
+      const sameGroup = activeSkus.filter(x => x.cat === sku.cat && x.carType === 'any');
+      const groupTotal = sameGroup.reduce((a, x) => a + x.share, 0) || 1;
+      return (serviceMix[sku.cat] || 0) * (sku.share / groupTotal);
+    } else {
+      const catSpecific = activeSkus.filter(x => x.cat === sku.cat && x.carType !== 'any');
+      const availTypes = [...new Set(catSpecific.map(x => x.carType))];
+      const totalCarMix = availTypes.reduce((a, ct) => a + (carMix[ct] || 0), 0) || 1;
+      const carWeight = (carMix[sku.carType] || 0) / totalCarMix;
+      const sameCatCar = catSpecific.filter(x => x.carType === sku.carType);
+      const catCarTotal = sameCatCar.reduce((a, x) => a + x.share, 0) || 1;
+      return (serviceMix[sku.cat] || 0) * carWeight * (sku.share / catCarTotal);
+    }
+  });
+
+  tbody.innerHTML = state.skus.map((sku, i) => {
+    const comm = sku.price - sku.payout;
+    const markup = sku.payout > 0 ? (comm / sku.payout * 100) : 0;
+    const eff = effShares[i];
+    return `<tr${!sku.active ? ' style="opacity:0.5"' : ''}>
+      <td>${catNames[sku.cat] || sku.cat}</td>
+      <td>${carNames[sku.carType] || sku.carType}</td>
+      <td>${sku.name}</td>
+      <td class="num"><input data-sku="${i}" data-field="price" type="number" value="${sku.price}"></td>
+      <td class="num"><input data-sku="${i}" data-field="payout" type="number" value="${sku.payout}"></td>
+      <td class="num" style="color:var(--green)">${fmt(comm)}</td>
+      <td class="num">${fmtPct(markup, 0)}</td>
+      <td class="num" style="color:${eff > 0 ? 'var(--blue)' : 'var(--muted)'}">${fmtPct(eff, 1)}</td>
+      <td><input type="checkbox" data-sku="${i}" data-field="active" ${sku.active ? 'checked' : ''}></td>
+    </tr>`;
+  }).join('');
+
+  // Attach events
+  tbody.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => { readSkuTable(); render(); });
+    inp.addEventListener('change', () => { readSkuTable(); render(); });
+  });
+}
+
+function readSkuTable() {
+  const tbody = document.getElementById('sku-tbody');
+  tbody.querySelectorAll('input[data-sku]').forEach(inp => {
+    const idx = parseInt(inp.dataset.sku);
+    const field = inp.dataset.field;
+    if (field === 'active') {
+      state.skus[idx].active = inp.checked;
+    } else {
+      state.skus[idx][field] = parseFloat(inp.value) || 0;
+    }
+  });
+}
+
+function addSkuRow() {
+  const newId = state.skus.length > 0 ? Math.max(...state.skus.map(s=>s.id)) + 1 : 1;
+  state.skus.push({ id: newId, cat: 'elements', carType: 'any', name: 'Новая услуга', price: 20000, payout: 13000, share: 5, active: true });
+  renderSkuTable();
+  render();
+}
+
+function updateSkuFooter(r) {
+  document.getElementById('sku-avg-price').textContent = fmtR(r.weightedPrice);
+  document.getElementById('sku-avg-payout').textContent = fmtR(r.weightedPayout);
+  document.getElementById('sku-avg-commission').textContent = fmtR(r.weightedCommission);
+  document.getElementById('sku-avg-pct').textContent = fmtPct(r.weightedMarkupPct, 0);
+  document.getElementById('sku-total-share').textContent = fmtPct(r.skuTotalShare, 0);
+}
+
+// ===================== CHANNEL TABLE =====================
+function renderChannelTable() {
+  const tbody = document.getElementById('channel-tbody');
+  const effectiveCheck = state.avgCheck;
+  const effectiveCommPct = state.commissionPct / 100;
+  tbody.innerHTML = state.channels.map((ch, i) => {
+    const paid = Math.round(ch.leads * (ch.conv/100));
+    const cpl = ch.leads > 0 ? ch.budget / ch.leads : 0;
+    const cac = paid > 0 ? ch.budget / paid : 0;
+    const revenue = paid * effectiveCheck * effectiveCommPct;
+    return `<tr${!ch.active ? ' style="color:var(--muted)"' : ''}>
+      <td>${ch.name}</td>
+      <td class="num"><input data-ch="${i}" data-field="leads" type="number" value="${ch.leads}"></td>
+      <td class="num"><input data-ch="${i}" data-field="budget" type="number" value="${ch.budget}"></td>
+      <td class="num">${cpl > 0 ? fmt(cpl, 0) : '—'}</td>
+      <td class="num"><input data-ch="${i}" data-field="conv" type="number" value="${ch.conv}" style="width:50px"></td>
+      <td class="num">${paid}</td>
+      <td class="num">${cac > 0 ? fmt(cac, 0) : '—'}</td>
+      <td class="num">${ch.active ? fmt(ch.avgCheck, 0) : '—'}</td>
+      <td class="num" style="color:${revenue > 100000 ? 'var(--green)' : revenue > 0 ? 'var(--yellow)' : 'var(--muted)'}">${revenue > 0 ? fmtK(revenue) : '—'}</td>
+      <td><input type="checkbox" data-ch="${i}" data-field="active" ${ch.active ? 'checked' : ''}></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => { readChannelTable(); render(); });
+    inp.addEventListener('change', () => { readChannelTable(); render(); });
+  });
+}
+
+function readChannelTable() {
+  const tbody = document.getElementById('channel-tbody');
+  tbody.querySelectorAll('input[data-ch]').forEach(inp => {
+    const idx = parseInt(inp.dataset.ch);
+    const field = inp.dataset.field;
+    if (field === 'active') {
+      state.channels[idx].active = inp.checked;
+    } else {
+      state.channels[idx][field] = parseFloat(inp.value) || 0;
+    }
+  });
+}
+
+function updateChannelFooter(r) {
+  document.getElementById('ch-total-leads').textContent = fmt(r.totalChannelLeads);
+  document.getElementById('ch-total-budget').textContent = fmtR(r.totalChannelBudget);
+  const totalCpl = r.totalChannelLeads > 0 ? r.totalChannelBudget / r.totalChannelLeads : 0;
+  document.getElementById('ch-total-cpl').textContent = totalCpl > 0 ? fmt(totalCpl, 0) : '—';
+  document.getElementById('ch-total-paid').textContent = fmt(r.totalChannelPaid);
+  const totalCac = r.totalChannelPaid > 0 ? r.totalChannelBudget / r.totalChannelPaid : 0;
+  document.getElementById('ch-total-cac').textContent = totalCac > 0 ? fmt(totalCac, 0) : '—';
+  const totalRev = r.channelStats.reduce((a,c) => a + c.revenue, 0);
+  document.getElementById('ch-total-revenue').textContent = fmtK(totalRev);
+}
+
+// ===================== AVG CHECK / COMMISSION AUTO-LINK =====================
+function updateAvgCheckAutoUI() {
+  const auto = document.getElementById('in-avg-check-auto').checked;
+  const inp = document.getElementById('in-avg-check');
+  const hint = document.getElementById('avg-check-auto-hint');
+  inp.readOnly = auto;
+  inp.style.opacity = auto ? '0.6' : '1';
+  if (hint) hint.style.display = auto ? '' : 'none';
+}
+
+function updateCommissionAutoUI() {
+  const auto = document.getElementById('in-commission-auto').checked;
+  const inp = document.getElementById('in-commission');
+  const range = document.getElementById('in-commission-range');
+  const hint = document.getElementById('commission-auto-hint');
+  inp.readOnly = auto;
+  inp.style.opacity = auto ? '0.6' : '1';
+  range.disabled = auto;
+  range.style.opacity = auto ? '0.6' : '1';
+  if (hint) hint.style.display = auto ? '' : 'none';
+}
+
+// ===================== INBOUND AUTO-LINK =====================
+function updateInboundAutoUI() {
+  const auto = document.getElementById('in-inbound-auto').checked;
+  const inp = document.getElementById('in-inbound');
+  const hint = document.getElementById('inbound-auto-hint');
+  inp.readOnly = auto;
+  inp.style.opacity = auto ? '0.6' : '1';
+  if (hint) hint.style.display = auto ? '' : 'none';
+}
+
+// ===================== FIXED COSTS =====================
+function renderFixedCosts() {
+  const tbody = document.getElementById('fc-tbody');
+  tbody.innerHTML = state.fixedCosts.map((fc, i) => {
+    return `<tr>
+      <td>${fc.name}</td>
+      <td class="num"><input data-fc="${i}" data-field="amount" type="number" value="${fc.amount}"></td>
+      <td><select class="field-input" style="width:110px;height:24px;font-size:11px" data-fc="${i}" data-field="type">
+        <option value="fixed" ${fc.type==='fixed'?'selected':''}>постоянный</option>
+        <option value="semi" ${fc.type==='semi'?'selected':''}>условно-перем.</option>
+      </select></td>
+      <td><input class="field-input" style="width:120px;height:24px;font-size:11px" placeholder="—" data-fc="${i}" data-field="comment" value="${fc.comment||''}"></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('input, select').forEach(inp => {
+    inp.addEventListener('input', () => { readFixedCosts(); render(); });
+    inp.addEventListener('change', () => { readFixedCosts(); render(); });
+  });
+}
+
+function readFixedCosts() {
+  const tbody = document.getElementById('fc-tbody');
+  tbody.querySelectorAll('[data-fc]').forEach(inp => {
+    const idx = parseInt(inp.dataset.fc);
+    const field = inp.dataset.field;
+    if (field === 'amount') {
+      state.fixedCosts[idx].amount = parseFloat(inp.value) || 0;
+    } else if (field === 'type') {
+      state.fixedCosts[idx].type = inp.value;
+    } else if (field === 'comment') {
+      state.fixedCosts[idx].comment = inp.value;
+    }
+  });
+}
+
+// ===================== WRITE RESULTS =====================
+function writeResults(r) {
+  // Summary cards
+  document.getElementById('sum-avg-check').textContent = fmtKR(state.avgCheck);
+  document.getElementById('sum-commission').textContent = fmtPct(state.commissionPct, 0);
+  document.getElementById('sum-acquiring').textContent = fmtPct(state.acquiringPct, 1);
+  document.getElementById('sum-orders-day').textContent = fmt(r.fulfilledPerDay, 1);
+  document.getElementById('sum-conversion').textContent = fmtPct(r.endToEndConv, 1);
+
+  const ebitdaEl = document.getElementById('sum-ebitda');
+  ebitdaEl.textContent = fmtKR(r.ebitda);
+  ebitdaEl.style.color = r.ebitda >= 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('sum-cash-buffer').textContent = fmtKR(r.netCash);
+  document.getElementById('sum-breakeven').textContent = isFinite(r.breakEvenOrders) ? r.breakEvenOrders + ' зак.' : '\u221E';
+
+  // Computed orders
+  document.getElementById('computed-orders-day').value = fmt(r.ordersPerDay, 2);
+
+  // Sticky panel
+  document.getElementById('sticky-gmv').textContent = fmtKR(r.gmv);
+  document.getElementById('sticky-acquiring').textContent = '\u2212' + fmtKR(r.acquiringCost);
+  document.getElementById('sticky-partner-pay').textContent = '\u2212' + fmtKR(r.partnerPayouts);
+  document.getElementById('sticky-revenue').textContent = fmtKR(r.agentRevenue);
+  document.getElementById('sticky-revenue').style.color = r.agentRevenue >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('sticky-taxes').textContent = '\u2212' + fmtKR(r.totalTaxes);
+  document.getElementById('sticky-losses').textContent = '\u2212' + fmtKR(r.totalLosses);
+  document.getElementById('sticky-upsell').textContent = '+' + fmtKR(r.upsellRevenue);
+  const contEl = document.getElementById('sticky-contribution');
+  contEl.textContent = fmtKR(r.contribution);
+  contEl.style.color = r.contribution >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('sticky-fixed').textContent = '\u2212' + fmtKR(r.totalFixedWithInsurance);
+  const ebitdaStickyEl = document.getElementById('sticky-ebitda');
+  ebitdaStickyEl.textContent = fmtKR(r.ebitda);
+  ebitdaStickyEl.style.color = r.ebitda >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('sticky-net-profit').textContent = fmtKR(r.netProfit);
+  document.getElementById('sticky-net-profit').style.color = r.netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('sticky-net-cash').textContent = fmtKR(r.netCash);
+
+  // FC footer
+  document.getElementById('fc-total').textContent = fmtR(r.totalFixedWithInsurance);
+  document.getElementById('fc-per-order').textContent = r.ordersPerMonth > 0 ? fmtR(r.fixedPerOrder) : '—';
+  document.getElementById('fc-breakeven').textContent = isFinite(r.breakEvenOrders) ? r.breakEvenOrders + ' зак./мес' : '\u221E';
+
+  // SKU footer
+  updateSkuFooter(r);
+
+  // Channel footer
+  updateChannelFooter(r);
+
+  // Mix sums
+  const serviceSum = state.mixFull + state.mixPartial + state.mixElements;
+  const serviceSumEl = document.getElementById('mix-service-sum');
+  if (serviceSum === 100) {
+    serviceSumEl.innerHTML = '= 100% &#10003;';
+    serviceSumEl.style.color = 'var(--green)';
+  } else {
+    serviceSumEl.innerHTML = '= ' + serviceSum + '% &#10007;';
+    serviceSumEl.style.color = 'var(--red)';
+  }
+
+  // Timeline
+  document.getElementById('tl-fulfill').textContent = state.cfFulfillDays;
+  document.getElementById('tl-payout').textContent = state.cfPayoutDays;
+
+  // Sidebar time
+  document.getElementById('sidebar-time').textContent = new Date().toLocaleTimeString('ru-RU');
+}
+
+// ===================== ALERTS =====================
+function updateAlerts(r) {
+  const alerts = [];
+  const serviceSum = state.mixFull + state.mixPartial + state.mixElements;
+  const carSum = state.carSedan + state.carCross + state.carSuv + state.carMini;
+
+  if (serviceSum === 100) {
+    alerts.push({ type: 'info', text: 'Микс услуг = 100% \u2713' });
+  } else {
+    alerts.push({ type: 'err', text: 'Микс услуг = ' + serviceSum + '% (должно быть 100%)' });
+  }
+
+  if (carSum === 100) {
+    alerts.push({ type: 'info', text: 'Микс авто = 100% \u2713' });
+  } else {
+    alerts.push({ type: 'err', text: 'Микс авто = ' + carSum + '% (должно быть 100%)' });
+  }
+
+  const inactiveChannels = state.channels.filter(c => !c.active);
+  inactiveChannels.forEach(ch => {
+    alerts.push({ type: 'warn', text: 'Канал \u00AB' + ch.name + '\u00BB отключён \u2014 0 лидов' });
+  });
+
+  if (isFinite(r.breakEvenOrders) && r.ordersPerMonth > 0 && r.breakEvenOrders > r.ordersPerMonth * 0.8) {
+    alerts.push({ type: 'warn', text: 'Безубыточность (' + r.breakEvenOrders + ') близка к текущему объёму (' + fmt(r.ordersPerMonth, 0) + ')' });
+  }
+
+  if (r.ebitda < 0) {
+    alerts.push({ type: 'err', text: 'EBITDA отрицательная: ' + fmtKR(r.ebitda) });
+  }
+
+  if (state.taxMode === 'management') {
+    alerts.push({ type: 'info', text: 'Налоги в управленческом режиме' });
+  }
+
+  const container = document.getElementById('alerts-container');
+  container.innerHTML = alerts.map(a =>
+    `<div class="alert alert-${a.type}">${a.text}</div>`
+  ).join('');
+}
+
+// ===================== SENSITIVITY =====================
+function updateSensitivity(r) {
+  const sens = calcSensitivity(state, r);
+  const container = document.getElementById('sensitivity-container');
+  const rows = [
+    { label: 'Комиссия +5%', value: fmtKR(sens.commPlus5), color: sens.commPlus5 >= 0 ? 'var(--green)' : 'var(--red)' },
+    { label: 'Комиссия \u22125%', value: fmtKR(sens.commMinus5), color: sens.commMinus5 >= 0 ? 'var(--green)' : 'var(--red)' },
+    { label: 'Эквайринг +1%', value: fmtKR(sens.acqPlus1), color: 'var(--red)' },
+    { label: 'Эквайринг \u22121%', value: fmtKR(sens.acqMinus1), color: 'var(--green)' },
+    { label: 'Конверсия +10%', value: fmtKR(sens.convPlus10), color: 'var(--green)' },
+    { label: 'Конверсия \u221210%', value: fmtKR(sens.convMinus10), color: 'var(--red)' },
+    { label: 'Чек +10K', value: fmtKR(sens.checkPlus10k), color: 'var(--green)' },
+    { label: 'Чек \u221210K', value: fmtKR(sens.checkMinus10k), color: 'var(--red)' },
+    { label: 'Нагрузка пост. расходов', value: fmtPct(sens.fixedCostLoad, 1) + ' выручки', color: 'var(--text)' },
+    { label: 'Влияние полной оклейки', value: '+' + fmtPct(sens.fullWrapMarginImpact, 0) + ' маржи', color: 'var(--green)' },
+  ];
+  container.innerHTML = rows.map(r =>
+    `<div class="sticky-row"><span class="lbl">${r.label}</span><span class="val" style="color:${r.color}">${r.value}</span></div>`
+  ).join('');
+}
+
+// ===================== TAX PREVIEW =====================
+function updateTaxPreview(r) {
+  const el = document.getElementById('tax-preview');
+  el.innerHTML = `
+    <div style="color:var(--muted);margin-bottom:4px">Формула налогового расчёта (за месяц):</div>
+    <div>Выручка от клиента: <span style="color:var(--blue)">${fmtR(r.gmv)}</span></div>
+    <div>\u2212 Эквайринг (${state.acquiringPct}%): <span style="color:var(--red)">\u2212${fmtR(r.acquiringCost)}</span></div>
+    <div>\u2212 Выплата партнёру: <span style="color:var(--red)">\u2212${fmtR(r.partnerPayouts)}</span></div>
+    <div style="border-top:1px dashed var(--border);margin:4px 0;padding-top:4px">= Маржа агента: <span style="color:var(--green)">${fmtR(r.marginBase)}</span></div>
+    <div>\u2212 Исходящий НДС: <span style="color:var(--red)">\u2212${fmtR(r.outputVAT)}</span></div>
+    <div>+ Входящий НДС (вычет): <span style="color:var(--green)">+${fmtR(r.totalInputVAT)}</span></div>
+    <div>= НДС к уплате: <span style="color:var(--red)">${fmtR(r.vatAmount)}</span></div>
+    <div style="border-top:1px dashed var(--border);margin:4px 0;padding-top:4px">EBITDA (до нал. на приб.): <span style="color:var(--blue)">${fmtR(r.ebitda)}</span></div>
+    <div>\u2212 Налог на прибыль (${state.profitTaxRate}%): <span style="color:var(--red)">\u2212${fmtR(r.profitTax)}</span></div>
+    <div style="border-top:1px dashed var(--border);margin:4px 0;padding-top:4px">= Итого налогов: <span style="color:var(--red)">${fmtR(r.totalTaxes)}</span> | Эфф. ставка: <span style="color:var(--yellow)">${fmtPct(r.effectiveTaxRate, 1)}</span></div>
+  `;
+}
+
+// ===================== MINI FUNNEL =====================
+function updateMiniFunnel(r) {
+  const bars = document.querySelectorAll('#mini-funnel .mf-bar');
+  if (!r.funnelSteps.length) return;
+  const maxVal = r.funnelSteps[0].value || 1;
+  r.funnelSteps.forEach((step, i) => {
+    if (bars[i]) {
+      const pct = Math.max(2, (step.value / maxVal) * 100);
+      bars[i].style.height = pct + '%';
+      // Value on hover
+      const valEl = bars[i].querySelector('.mf-value');
+      if (valEl) valEl.textContent = fmt(step.value, 1);
+      // Conversion rate inside bar (step-to-step)
+      const convEl = bars[i].querySelector('.mf-conv');
+      if (convEl && i > 0) {
+        const prev = r.funnelSteps[i - 1].value;
+        const convPct = prev > 0 ? (step.value / prev * 100) : 0;
+        convEl.textContent = fmt(convPct, 0) + '%';
+      }
+    }
+  });
+}
+
+// ===================== CHARTS =====================
+let chartWaterfall, chartFunnel, chartChannels, chartCashflow, chartTornado;
+
+function initCharts() {
+  chartWaterfall = echarts.init(document.getElementById('chart-waterfall'), null, { renderer: 'canvas' });
+  chartFunnel = echarts.init(document.getElementById('chart-funnel'), null, { renderer: 'canvas' });
+  chartChannels = echarts.init(document.getElementById('chart-channels'), null, { renderer: 'canvas' });
+  chartCashflow = echarts.init(document.getElementById('chart-cashflow'), null, { renderer: 'canvas' });
+  chartTornado = echarts.init(document.getElementById('chart-tornado'), null, { renderer: 'canvas' });
+}
+
+function makeGrad(chart, c1, c2, dir) {
+  // dir: 'v' = vertical, 'h' = horizontal
+  return new echarts.graphic.LinearGradient(
+    dir === 'h' ? 0 : 0, 0,
+    dir === 'h' ? 1 : 0, dir === 'h' ? 0 : 1,
+    [{ offset: 0, color: c1 }, { offset: 1, color: c2 }]
+  );
+}
+
+const CHART_TOOLTIP = {
+  backgroundColor: 'rgba(18,25,35,.92)',
+  borderColor: 'rgba(96,165,250,.25)',
+  borderWidth: 1,
+  textStyle: { color: '#eef4ff', fontSize: 12, fontFamily: 'Inter, system-ui, sans-serif' },
+  padding: [8, 12],
+  extraCssText: 'backdrop-filter:blur(8px);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.4)',
+};
+
+function updateCharts(r) {
+  if (!chartWaterfall) return;
+
+  // === 1. Waterfall P&L ===
+  const wfCats = ['Оборот', '\u2212Эквайринг', '\u2212Партнёрам', '=Маржа', '\u2212НДС', '\u2212Возвраты', '+Допрод.', '=Вклад', '\u2212Пост.расх.', '=EBITDA', '\u2212Нал.приб.', '=Чист.приб.'];
+  const wfVals = [r.gmv, -r.acquiringCost, -r.partnerPayouts, r.marginBase, -r.vatAmount, -r.totalLosses, r.upsellRevenue, r.contribution, -r.totalFixedWithInsurance, r.ebitda, -r.profitTax, r.netProfit];
+
+  const assist = []; const visible = []; const wfColors = [];
+  let running = 0;
+  for (let i = 0; i < wfVals.length; i++) {
+    const v = wfVals[i];
+    const cat = wfCats[i];
+    if (cat.startsWith('=')) {
+      assist.push(0); visible.push(v);
+      wfColors.push(v >= 0 ? 'total-pos' : 'total-neg');
+    } else {
+      if (v >= 0) { assist.push(running); visible.push(v); wfColors.push('income'); }
+      else { assist.push(running + v); visible.push(-v); wfColors.push('expense'); }
+      running += v;
+    }
+  }
+
+  const wfGradMap = {
+    income: makeGrad(chartWaterfall, 'rgba(96,165,250,.9)', 'rgba(47,110,229,.6)', 'v'),
+    expense: makeGrad(chartWaterfall, 'rgba(248,113,113,.9)', 'rgba(220,50,50,.5)', 'v'),
+    'total-pos': makeGrad(chartWaterfall, 'rgba(74,222,128,.95)', 'rgba(34,197,94,.5)', 'v'),
+    'total-neg': makeGrad(chartWaterfall, 'rgba(248,113,113,.95)', 'rgba(220,50,50,.5)', 'v'),
+  };
+
+  chartWaterfall.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { ...CHART_TOOLTIP, trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(96,165,250,.06)' } },
+      formatter: params => {
+        const idx = params[0].dataIndex;
+        const val = wfVals[idx];
+        return '<span style="font-weight:600">' + wfCats[idx] + '</span><br/>' +
+          '<span style="font-size:14px;font-weight:700;color:' + (val >= 0 ? '#4ade80' : '#f87171') + '">' + fmtKR(val) + '</span>';
+      }
+    },
+    grid: { left: 60, right: 20, top: 30, bottom: 50 },
+    xAxis: { type: 'category', data: wfCats,
+      axisLabel: { color: '#7a8da4', fontSize: 10, rotate: 35, fontFamily: 'Inter' },
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } },
+      axisTick: { show: false },
+    },
+    yAxis: { type: 'value',
+      axisLabel: { color: '#7a8da4', fontSize: 11, formatter: v => fmtK(v) },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,.04)', type: 'dashed' } },
+      axisLine: { show: false }, axisTick: { show: false },
+    },
+    series: [
+      { type: 'bar', stack: 'wf', data: assist, itemStyle: { color: 'transparent' }, emphasis: { itemStyle: { color: 'transparent' } } },
+      { type: 'bar', stack: 'wf', barWidth: '55%',
+        data: visible.map((v, i) => ({ value: v, itemStyle: { color: wfGradMap[wfColors[i]], borderRadius: [3, 3, 0, 0] } })),
+        label: {
+          show: true, position: 'top', fontSize: 10, fontWeight: 600, fontFamily: 'Inter',
+          color: '#9eb0c8',
+          formatter: p => { const val = wfVals[p.dataIndex]; return Math.abs(val) >= 1000 ? fmtK(val) : ''; }
+        },
+      },
+    ],
+    animationDuration: 600, animationEasing: 'cubicOut',
+  });
+
+  // === 2. Funnel ===
+  const funnelColors = [
+    makeGrad(chartFunnel, '#60a5fa', '#2f6ee5', 'v'),
+    makeGrad(chartFunnel, '#a78bfa', '#7c3aed', 'v'),
+    makeGrad(chartFunnel, '#fbbf24', '#d97706', 'v'),
+    makeGrad(chartFunnel, '#4ade80', '#16a34a', 'v'),
+    makeGrad(chartFunnel, '#38bdf8', '#0284c7', 'v'),
+  ];
+
+  chartFunnel.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { ...CHART_TOOLTIP, trigger: 'item',
+      formatter: p => {
+        const idx = r.funnelSteps.findIndex(s => s.name === p.name);
+        let conv = '';
+        if (idx > 0) {
+          const prev = r.funnelSteps[idx - 1].value;
+          conv = '<br/><span style="color:#9eb0c8">Конверсия: ' + fmtPct(prev > 0 ? p.value / prev * 100 : 0, 1) + '</span>';
+        }
+        return '<span style="font-weight:600">' + p.name + '</span><br/>' +
+          '<span style="font-size:14px;font-weight:700">' + fmt(p.value, 0) + ' / мес</span>' + conv;
+      }
+    },
+    series: [{
+      type: 'funnel', left: '8%', width: '84%', top: 20, bottom: 20,
+      min: 0, max: Math.max(...r.funnelSteps.map(s => s.value), 1),
+      sort: 'descending', gap: 3,
+      label: {
+        show: true, position: 'inside', fontSize: 12, fontWeight: 600, fontFamily: 'Inter',
+        color: '#fff',
+        formatter: p => p.name + '\n' + fmt(p.value, 0),
+        lineHeight: 16, textShadowColor: 'rgba(0,0,0,.4)', textShadowBlur: 4,
+      },
+      labelLine: { show: false },
+      itemStyle: {
+        borderWidth: 1, borderColor: 'rgba(255,255,255,.1)',
+        shadowBlur: 12, shadowColor: 'rgba(0,0,0,.3)',
+      },
+      emphasis: {
+        label: { fontSize: 13 },
+        itemStyle: { shadowBlur: 20, shadowColor: 'rgba(96,165,250,.3)' }
+      },
+      data: r.funnelSteps.map((s, i) => ({
+        name: s.name, value: Math.round(s.value),
+        itemStyle: { color: funnelColors[i] }
+      }))
+    }],
+    animationDuration: 800, animationEasing: 'cubicOut',
+  });
+
+  // === 3. Channels ===
+  const chData = r.channelStats.filter(c => c.revenue > 0).map(c => ({ name: c.name, value: Math.round(c.revenue) }));
+  const pieColors = [
+    makeGrad(chartChannels, '#60a5fa', '#2f6ee5', 'h'),
+    makeGrad(chartChannels, '#4ade80', '#16a34a', 'h'),
+    makeGrad(chartChannels, '#a78bfa', '#7c3aed', 'h'),
+    makeGrad(chartChannels, '#fbbf24', '#d97706', 'h'),
+    makeGrad(chartChannels, '#f87171', '#dc2626', 'h'),
+  ];
+
+  // If only 1 channel, show as a stat card instead of donut
+  const hasMultipleChannels = chData.length > 1;
+
+  chartChannels.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { ...CHART_TOOLTIP, trigger: 'item',
+      formatter: p => '<span style="font-weight:600">' + p.name + '</span><br/>' +
+        '<span style="font-size:14px;font-weight:700;color:#4ade80">' + fmtKR(p.value) + '</span>' +
+        (hasMultipleChannels ? ' <span style="color:#9eb0c8">(' + fmtPct(p.percent, 0) + ')</span>' : '')
+    },
+    legend: hasMultipleChannels ? {
+      bottom: 0, textStyle: { color: '#9eb0c8', fontSize: 11, fontFamily: 'Inter' },
+      icon: 'roundRect', itemWidth: 12, itemHeight: 8, itemGap: 12,
+    } : undefined,
+    series: [{
+      type: 'pie', radius: hasMultipleChannels ? ['42%', '72%'] : ['50%', '75%'],
+      center: ['50%', hasMultipleChannels ? '45%' : '50%'],
+      padAngle: hasMultipleChannels ? 3 : 0,
+      itemStyle: {
+        borderRadius: 6,
+        borderWidth: 2, borderColor: 'rgba(10,15,21,.6)',
+        shadowBlur: 16, shadowColor: 'rgba(0,0,0,.25)',
+      },
+      label: {
+        show: true, fontSize: 11, fontWeight: 600, fontFamily: 'Inter', color: '#eef4ff',
+        formatter: p => p.name + '\n' + fmtKR(p.value),
+        lineHeight: 15,
+      },
+      labelLine: { lineStyle: { color: 'rgba(255,255,255,.15)', width: 1 }, smooth: true, length: 10, length2: 15 },
+      emphasis: {
+        scaleSize: 8,
+        itemStyle: { shadowBlur: 24, shadowColor: 'rgba(96,165,250,.4)' },
+        label: { fontSize: 13, fontWeight: 700 },
+      },
+      data: chData.map((d, i) => ({ ...d, itemStyle: { color: pieColors[i % pieColors.length] } })),
+    }],
+    animationDuration: 700, animationEasing: 'cubicOut',
+  });
+
+  // === 4. Cashflow 12-month ===
+  chartCashflow.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { ...CHART_TOOLTIP, trigger: 'axis',
+      formatter: params => {
+        let s = '<span style="font-weight:600">Месяц ' + params[0].name + '</span>';
+        params.forEach(p => {
+          if (p.seriesIndex === 0) s += '<br/>Баланс: <span style="font-weight:700;color:#60a5fa">' + fmtKR(p.value) + '</span>';
+          if (p.seriesIndex === 1) s += '<br/><span style="color:#9eb0c8">Мин. запас: ' + fmtKR(p.value) + '</span>';
+        });
+        return s;
+      }
+    },
+    grid: { left: 65, right: 20, top: 30, bottom: 35 },
+    xAxis: { type: 'category', data: r.cashflowTimeline.map(t => 'М' + t.month),
+      axisLabel: { color: '#7a8da4', fontSize: 11, fontFamily: 'Inter' },
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } }, axisTick: { show: false },
+      boundaryGap: false,
+    },
+    yAxis: { type: 'value',
+      axisLabel: { color: '#7a8da4', fontSize: 11, formatter: v => fmtK(v) },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,.04)', type: 'dashed' } },
+      axisLine: { show: false }, axisTick: { show: false },
+    },
+    series: [
+      {
+        type: 'line', name: 'Баланс',
+        data: r.cashflowTimeline.map(t => Math.round(t.cash)),
+        lineStyle: { color: '#60a5fa', width: 3, shadowBlur: 8, shadowColor: 'rgba(96,165,250,.4)' },
+        itemStyle: { color: '#60a5fa', borderWidth: 2, borderColor: '#fff', shadowBlur: 6, shadowColor: 'rgba(96,165,250,.5)' },
+        symbolSize: 6,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(96,165,250,.25)' },
+            { offset: 0.6, color: 'rgba(47,110,229,.08)' },
+            { offset: 1, color: 'rgba(47,110,229,.01)' },
+          ])
+        },
+        smooth: 0.3,
+        label: { show: true, position: 'top', fontSize: 10, fontWeight: 600, color: '#7a8da4', formatter: p => fmtK(p.value) },
+      },
+      {
+        type: 'line', name: 'Мин. запас',
+        data: r.cashflowTimeline.map(t => t.minBuffer),
+        lineStyle: { color: 'rgba(248,113,113,.5)', width: 1.5, type: [6, 4] },
+        itemStyle: { color: '#f87171' }, symbol: 'none',
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(248,113,113,.06)' },
+            { offset: 1, color: 'rgba(248,113,113,.01)' },
+          ])
+        },
+      }
+    ],
+    animationDuration: 800, animationEasing: 'cubicOut',
+  });
+
+  // === 5. Tornado (sensitivity) ===
+  const sens = calcSensitivity(state, r);
+  const tornadoData = [
+    { name: 'Комиссия +5%', value: sens.commPlus5 },
+    { name: 'Комиссия \u22125%', value: sens.commMinus5 },
+    { name: 'Эквайринг +1%', value: sens.acqPlus1 },
+    { name: 'Эквайринг \u22121%', value: sens.acqMinus1 },
+    { name: 'Конверсия +10%', value: sens.convPlus10 },
+    { name: 'Конверсия \u221210%', value: sens.convMinus10 },
+    { name: 'Чек +10K', value: sens.checkPlus10k },
+    { name: 'Чек \u221210K', value: sens.checkMinus10k },
+  ].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+  chartTornado.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { ...CHART_TOOLTIP, trigger: 'axis',
+      formatter: params => '<span style="font-weight:600">' + params[0].name + '</span><br/>' +
+        '<span style="font-size:14px;font-weight:700;color:' + (params[0].value >= 0 ? '#4ade80' : '#f87171') + '">' +
+        (params[0].value >= 0 ? '+' : '') + fmtKR(params[0].value) + '</span>'
+    },
+    grid: { left: 140, right: 60, top: 10, bottom: 20 },
+    xAxis: { type: 'value',
+      axisLabel: { color: '#7a8da4', fontSize: 11, formatter: v => fmtK(v) },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,.04)', type: 'dashed' } },
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,.08)' } }, axisTick: { show: false },
+    },
+    yAxis: { type: 'category', data: tornadoData.map(d => d.name),
+      axisLabel: { color: '#9eb0c8', fontSize: 11, fontFamily: 'Inter' },
+      axisLine: { show: false }, axisTick: { show: false },
+    },
+    series: [{
+      type: 'bar', barWidth: '55%',
+      data: tornadoData.map(d => ({
+        value: Math.round(d.value),
+        itemStyle: {
+          color: d.value >= 0
+            ? makeGrad(chartTornado, 'rgba(74,222,128,.85)', 'rgba(34,197,94,.5)', 'h')
+            : makeGrad(chartTornado, 'rgba(248,113,113,.85)', 'rgba(220,50,50,.5)', 'h'),
+          borderRadius: d.value >= 0 ? [0, 4, 4, 0] : [4, 0, 0, 4],
+          shadowBlur: 6, shadowColor: d.value >= 0 ? 'rgba(74,222,128,.2)' : 'rgba(248,113,113,.2)',
+        }
+      })),
+      label: {
+        show: true, position: 'outside', fontSize: 10, fontWeight: 600, fontFamily: 'Inter',
+        color: '#9eb0c8',
+        formatter: p => (p.value >= 0 ? '+' : '') + fmtK(p.value),
+      },
+    }],
+    animationDuration: 600, animationEasing: 'cubicOut',
+  });
+}
+
+function resizeCharts() {
+  [chartWaterfall, chartFunnel, chartChannels, chartCashflow, chartTornado].forEach(c => { if (c) c.resize(); });
+}
+
+// ===================== RENDER =====================
+function render() {
+  readState();
+  const r = recalc(state);
+  lastResults = r;
+  writeResults(r);
+  updateAlerts(r);
+  updateSensitivity(r);
+  updateTaxPreview(r);
+  updateMiniFunnel(r);
+  updateCharts(r);
+}
+
+// ===================== SCENARIOS =====================
+function applyScenario(name) {
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  if (SCENARIOS[name]) {
+    Object.assign(state, SCENARIOS[name]);
+  }
+  document.getElementById('sidebar-scenario').textContent =
+    name === 'base' ? 'Базовый' : name === 'growth' ? 'Рост' : name === 'stress' ? 'Стресс' : name;
+
+  document.querySelectorAll('.btn-scenario[data-scenario]').forEach(b => {
+    b.classList.toggle('active', b.dataset.scenario === name);
+  });
+
+  writeStateToDOM();
+  render();
+}
+
+function saveScenario(name) {
+  const scenarios = JSON.parse(localStorage.getItem('eclipse-auto-scenarios') || '{}');
+  scenarios[name] = JSON.parse(JSON.stringify(state));
+  localStorage.setItem('eclipse-auto-scenarios', JSON.stringify(scenarios));
+}
+
+function loadScenario(name) {
+  const scenarios = JSON.parse(localStorage.getItem('eclipse-auto-scenarios') || '{}');
+  if (scenarios[name]) {
+    state = JSON.parse(JSON.stringify(scenarios[name]));
+    document.getElementById('sidebar-scenario').textContent = name;
+    writeStateToDOM();
+    render();
+  }
+}
+
+function promptSaveScenario() {
+  const name = prompt('Название сценария:');
+  if (name) {
+    saveScenario(name);
+    alert('Сценарий "' + name + '" сохранён');
+  }
+}
+
+// ===================== EXPORT =====================
+function exportJSON() {
+  readState();
+  const r = recalc(state);
+  const data = { state, results: r, exportDate: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'eclipse-auto-model.json';
+  a.click();
+}
+
+function exportCSV() {
+  readState();
+  const r = recalc(state);
+  const rows = [
+    ['Показатель', 'Значение'],
+    ['Оборот (GMV)', r.gmv],
+    ['Выручка агента', r.agentRevenue],
+    ['Выплаты партнёрам', r.partnerPayouts],
+    ['Эквайринг', r.acquiringCost],
+    ['Потери (возвраты)', r.totalLosses],
+    ['Маржа агента', r.marginBase],
+    ['НДС', r.vatAmount],
+    ['Налог на прибыль', r.profitTax],
+    ['Итого налогов', r.totalTaxes],
+    ['Допродажи', r.upsellRevenue],
+    ['Маржинальная прибыль', r.contribution],
+    ['Постоянные расходы', r.totalFixedWithInsurance],
+    ['EBITDA', r.ebitda],
+    ['Чистая прибыль', r.netProfit],
+    ['EBITDA маржа %', r.ebitdaMargin],
+    ['Заказов в месяц', r.ordersPerMonth],
+    ['Точка безубыточности', r.breakEvenOrders],
+    ['Чистый денежный поток', r.netCash],
+  ];
+  const csv = rows.map(r => r.join(';')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'eclipse-auto-pnl.csv';
+  a.click();
+}
+
+// ===================== TAB NAVIGATION =====================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelectorAll('.sidebar a[data-tab]').forEach(a => {
+    a.classList.toggle('active', a.dataset.tab === tabId);
+  });
+  if (tabId === 'tab-dashboard') {
+    setTimeout(resizeCharts, 50);
+  }
+}
+
+// ===================== EVENT WIRING =====================
+function wireEvents() {
+  // All basic inputs
+  const inputIds = [
+    'in-avg-check','in-commission','in-acquiring','in-refund-rate',
+    'in-prepayment','in-payout-delay',
+    'in-inbound','in-target-rate','in-conv-calc','in-conv-pay','in-conv-fulfill','in-work-days',
+    'in-mix-full','in-mix-partial','in-mix-elements',
+    'in-car-sedan','in-car-cross','in-car-suv','in-car-mini',
+    'in-upsell-pen','in-upsell-check','in-upsell-margin',
+    'in-vat','in-profit-tax','in-insurance','in-other-tax',
+    'in-cf-prepay','in-cf-instant','in-cf-fulfill-days','in-cf-payout-days',
+    'in-cf-refund-delay','in-cf-refund-reserve','in-cf-min-buffer'
+  ];
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', render);
+    }
+  });
+
+  // Selects
+  ['in-payout-freq','in-tax-mode','in-cf-payout-freq'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', render);
+  });
+
+  // Commission slider sync
+  const rangeEl = document.getElementById('in-commission-range');
+  const numEl = document.getElementById('in-commission');
+  rangeEl.addEventListener('input', () => {
+    numEl.value = rangeEl.value;
+    render();
+  });
+  numEl.addEventListener('input', () => {
+    rangeEl.value = numEl.value;
+    render();
+  });
+
+  // Auto-link toggles
+  document.getElementById('in-avg-check-auto').addEventListener('change', () => {
+    updateAvgCheckAutoUI();
+    render();
+  });
+  document.getElementById('in-commission-auto').addEventListener('change', () => {
+    updateCommissionAutoUI();
+    render();
+  });
+  document.getElementById('in-inbound-auto').addEventListener('change', () => {
+    updateInboundAutoUI();
+    render();
+  });
+
+  // Scenario buttons
+  document.querySelectorAll('.btn-scenario[data-scenario]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.scenario;
+      if (name === 'custom') {
+        const scenarios = JSON.parse(localStorage.getItem('eclipse-auto-scenarios') || '{}');
+        const keys = Object.keys(scenarios);
+        if (keys.length > 0) {
+          const choice = prompt('Введите имя сценария (' + keys.join(', ') + '):');
+          if (choice && scenarios[choice]) {
+            loadScenario(choice);
+          }
+        } else {
+          alert('Нет сохранённых сценариев');
+        }
+      } else {
+        applyScenario(name);
+      }
+    });
+  });
+
+  // Tab navigation
+  document.querySelectorAll('.sidebar a[data-tab]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      switchTab(a.dataset.tab);
+    });
+  });
+
+  // Window resize
+  window.addEventListener('resize', resizeCharts);
+}
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  renderSkuTable();
+  renderChannelTable();
+  renderFixedCosts();
+  wireEvents();
+  initCharts();
+  render();
+});
+</script>
+</body>
+</html>
