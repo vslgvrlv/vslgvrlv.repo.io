@@ -35,14 +35,26 @@
       font-size: 13px;
       margin-bottom: 40px;
     }
+    .section {
+      margin-bottom: 32px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4a6080;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      padding-left: 2px;
+    }
     .projects {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     a.card {
       display: block;
-      padding: 20px 24px;
+      padding: 18px 22px;
       border-radius: 12px;
       border: 1px solid transparent;
       background:
@@ -58,24 +70,24 @@
       box-shadow: 0 8px 24px rgba(0,0,0,.3);
     }
     .card-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       margin-bottom: 4px;
     }
     .card-desc {
-      font-size: 12px;
+      font-size: 11px;
       color: #8aa0bc;
     }
     .dot {
       display: inline-block;
-      width: 8px; height: 8px;
+      width: 7px; height: 7px;
       border-radius: 50%;
       margin-right: 8px;
       position: relative;
       top: -1px;
     }
-    .dot-blue { background: #60a5fa; }
-    .dot-green { background: #4ade80; }
+    .dot-blue   { background: #60a5fa; }
+    .dot-green  { background: #4ade80; }
     .dot-violet { background: #a78bfa; }
     .dot-yellow { background: #fbbf24; }
   </style>
@@ -84,24 +96,35 @@
   <div class="container">
     <h1>Проекты</h1>
     <p class="subtitle">vslgvrlv · персональные инструменты</p>
-    <div class="projects">
-      <a class="card" href="./eclipse-auto/">
-        <div class="card-title"><span class="dot dot-blue"></span>Эклипс Авто</div>
-        <div class="card-desc">Финансовая модель PPF-бизнеса · unit-экономика, воронка, сценарии</div>
-      </a>
-      <a class="card" href="./rnp-dashboard/">
-        <div class="card-title"><span class="dot dot-violet"></span>RNP Dashboard</div>
-        <div class="card-desc">Дашборд с метриками и фильтрами</div>
-      </a>
-      <a class="card" href="./nanny/">
-        <div class="card-title"><span class="dot dot-green"></span>Калькулятор няни</div>
-        <div class="card-desc">Расчёт стоимости услуг с историей</div>
-      </a>
-      <a class="card" href="./mortgage/">
-        <div class="card-title"><span class="dot dot-yellow"></span>Ипотечный калькулятор</div>
-        <div class="card-desc">Расчёт платежей и графиков погашения</div>
-      </a>
+
+    <div class="section">
+      <div class="section-label">Эклипс Авто</div>
+      <div class="projects">
+        <a class="card" href="./eclipse-auto/">
+          <div class="card-title"><span class="dot dot-blue"></span>Калькулятор бизнес модели</div>
+          <div class="card-desc">Финансовая модель PPF-бизнеса · unit-экономика, воронка, сценарии</div>
+        </a>
+        <a class="card" href="./eclipse-auto/rnp-dashboard/">
+          <div class="card-title"><span class="dot dot-violet"></span>RNP Dashboard</div>
+          <div class="card-desc">Дашборд маркетинга и продаж с метриками, фильтрами и сравнением периодов</div>
+        </a>
+      </div>
     </div>
+
+    <div class="section">
+      <div class="section-label">Личное</div>
+      <div class="projects">
+        <a class="card" href="./personal/nanny/">
+          <div class="card-title"><span class="dot dot-green"></span>Калькулятор няни</div>
+          <div class="card-desc">Расчёт стоимости услуг с историей</div>
+        </a>
+        <a class="card" href="./personal/mortgage/">
+          <div class="card-title"><span class="dot dot-yellow"></span>Ипотечный калькулятор</div>
+          <div class="card-desc">Расчёт платежей и графиков погашения</div>
+        </a>
+      </div>
+    </div>
+
   </div>
 </body>
 </html>
