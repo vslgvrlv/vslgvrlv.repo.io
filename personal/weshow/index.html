@@ -492,7 +492,7 @@ td { padding: 10px 16px; vertical-align: middle; }
   <button class="btn-sample" id="load-sample">Загрузить пример (WeShow)</button>
 
   <p class="format-hint">
-    Ожидаемые колонки CSV: <code>ID</code> <code>Имя</code> <code>Отдел</code> <code>Подотдел</code> <code>Должность/Роль</code> <code>Руководитель</code> <code>Тип занятости</code>
+    Ожидаемые колонки CSV: <code>id</code> <code>Имя</code> <code>Фамилия</code> <code>Отдел</code> <code>Должность</code> <code>Тип занятости</code> <code>форма сотрудничества</code>
   </p>
 </div>
 
@@ -524,10 +524,9 @@ td { padding: 10px 16px; vertical-align: middle; }
           <tr>
             <th data-col="Имя">Имя</th>
             <th data-col="Отдел">Отдел</th>
-            <th data-col="Подотдел">Подотдел</th>
-            <th data-col="Должность/Роль">Должность</th>
-            <th data-col="Руководитель">Руководитель</th>
+            <th data-col="Должность">Должность</th>
             <th data-col="Тип занятости">Тип</th>
+            <th data-col="форма сотрудничества">Форма</th>
           </tr>
         </thead>
         <tbody id="table-body"></tbody>
@@ -537,24 +536,17 @@ td { padding: 10px 16px; vertical-align: middle; }
 </div>
 
 <script>
-// ── SAMPLE DATA (first 20 rows for demo) ──
-const SAMPLE_CSV = `ID,Имя,Отдел,Подотдел,Должность/Роль,Руководитель,Тип занятости
-1,Маша,Менеджмент,,Руководитель отдела,,Штат
-2,Батищева,Менеджмент,,Менеджер,Маша,Штат
-3,Потецкая,Менеджмент,,Менеджер,Маша,Штат
-4,Городничая,Менеджмент,,Менеджер,Маша,Штат
-5,Гай,Менеджмент,,Аутсорс,Маша,Аутсорс
-6,Милена,Менеджмент,,Аутсорс,Маша,Аутсорс
-7,Карина,Менеджмент,,Аутсорс,Маша,Аутсорс
-8,Тимур,Менеджмент,,Аутсорс,Маша,Аутсорс
-9,Игорь Кассельман,Video,,Руководитель отдела,,Штат
-10,Вадим Любохотников,Video,Операторская группа,Руководитель группы,Игорь Кассельман,Штат
-11,Андрей,Video,Операторская группа,Оператор,Вадим Любохотников,Штат
-12,Григорий,Video,Операторская группа,Оператор,Вадим Любохотников,Штат
-13,Сергей Щеголев,Video,Монтаж,Монтажёр,Игорь Кассельман,Штат
-14,Луа,Бухгалтерия,,Руководитель,,Штат
-15,Игорь,Бухгалтерия,,Бухгалтер,Луа,Штат
-16,Захар,Бухгалтерия,,Бухгалтер,Луа,Штат`;
+// ── SAMPLE DATA ──
+const SAMPLE_CSV = `id,Имя,Фамилия,Отдел,Должность,Тип занятости,форма сотрудничества
+1,Мария,Гаврилова,менеджмент,главный продюсер,штат,распределение прибыли
+2,Евгения,Батищева,менеджмент,продюсер,штат,сдельная
+3,Анастасия,Потоцкая,менеджмент,продюсер,штат,зп + сдельная
+4,Марина,Городницкая,менеджмент,продюсер,аутсорс,сдельная
+5,Гаянэ,Петросянц,менеджмент,главный менеджер бекстейджа,аутсорс,сдельная
+6,Милена,Петросова,менеджмент,менеджер бекстейджа,аутсорс,сдельная
+7,Игорь,Кассельман,video,руководитель отдела,штат,зп
+8,Вадим,Любохотников,video,оператор,штат,зп
+9,Луа,,бухгалтерия,главный бухгалтер,штат,зп`;
 
 // ── COLOR PALETTE ──
 const DEPT_COLORS = [
@@ -582,6 +574,11 @@ function parseCSV(text) {
     headers.forEach((h, i) => row[h] = vals[i] || '');
     return row;
   });
+}
+
+// ── FULL NAME helper ──
+function fullName(r) {
+  return [r['Имя'], r['Фамилия']].filter(Boolean).join(' ');
 }
 
 // ── INIT ──
@@ -634,7 +631,7 @@ function setDept(dept) {
 function renderStats() {
   const total = allRows.length;
   const depts = new Set(allRows.map(r => r['Отдел']).filter(Boolean)).size;
-  const outsource = allRows.filter(r => r['Тип занятости'] === 'Аутсорс').length;
+  const outsource = allRows.filter(r => (r['Тип занятости']||'').toLowerCase() === 'аутсорс').length;
   document.getElementById('header-stats').innerHTML =
     `<b>${total}</b> сотрудников &nbsp;·&nbsp; <b>${depts}</b> отделов &nbsp;·&nbsp; <b>${outsource}</b> аутсорс`;
 }
@@ -651,7 +648,7 @@ function renderOrg() {
     if (currentDept !== 'all' && dept !== currentDept) return;
 
     let rows = allRows.filter(r => r['Отдел'] === dept);
-    if (search) rows = rows.filter(r => (r['Имя']||'').toLowerCase().includes(search));
+    if (search) rows = rows.filter(r => fullName(r).toLowerCase().includes(search));
     if (!rows.length) return;
 
     const color = deptColors[dept];
@@ -671,45 +668,26 @@ function renderOrg() {
 }
 
 function buildTree(rows, color) {
-  // Build name → children map
-  const byName = {};
-  rows.forEach(r => { byName[r['Имя']] = r; });
-
-  // Find roots (no manager OR manager not in this dept)
-  const roots = rows.filter(r => !r['Руководитель'] || !byName[r['Руководитель']]);
-  const children = {};
-  rows.forEach(r => {
-    if (r['Руководитель'] && byName[r['Руководитель']]) {
-      if (!children[r['Руководитель']]) children[r['Руководитель']] = [];
-      children[r['Руководитель']].push(r);
-    }
-  });
-
-  function renderNode(r, depth) {
-    const isLead = !r['Руководитель'] || !byName[r['Руководитель']];
-    const isOut = r['Тип занятости'] === 'Аутсорс';
-    const initials = (r['Имя']||'?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-    const kids = children[r['Имя']] || [];
+  function renderNode(r) {
+    const isOut = (r['Тип занятости']||'').toLowerCase() === 'аутсорс';
+    const name = fullName(r);
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || '?';
 
     let badge = '';
-    if (isLead && depth === 0 && rows.length > 1) badge = `<span class="node-badge badge-lead">Lead</span>`;
     if (isOut) badge = `<span class="node-badge badge-out">Out</span>`;
 
-    let html = `
-      <div class="node-row depth-${depth}">
-        <div class="node-avatar" style="background:${color}${depth > 0 ? '99' : ''}">${initials}</div>
+    return `
+      <div class="node-row depth-0">
+        <div class="node-avatar" style="background:${color}">${initials}</div>
         <div class="node-info">
-          <div class="node-name">${r['Имя']}</div>
-          <div class="node-role">${r['Должность/Роль'] || r['Подотдел'] || ''}</div>
+          <div class="node-name">${name}</div>
+          <div class="node-role">${r['Должность'] || ''}</div>
         </div>
         ${badge}
       </div>`;
-
-    kids.forEach(kid => { html += renderNode(kid, Math.min(depth + 1, 3)); });
-    return html;
   }
 
-  return roots.map(r => renderNode(r, 0)).join('');
+  return rows.map(r => renderNode(r)).join('');
 }
 
 // ── TABLE VIEW ──
@@ -717,7 +695,7 @@ function renderTable() {
   const search = currentSearch.toLowerCase();
   let rows = allRows;
   if (currentDept !== 'all') rows = rows.filter(r => r['Отдел'] === currentDept);
-  if (search) rows = rows.filter(r => (r['Имя']||'').toLowerCase().includes(search));
+  if (search) rows = rows.filter(r => fullName(r).toLowerCase().includes(search));
 
   if (sortCol) {
     rows = [...rows].sort((a, b) => {
@@ -728,20 +706,19 @@ function renderTable() {
 
   const tbody = document.getElementById('table-body');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="no-data">Ничего не найдено</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="no-data">Ничего не найдено</td></tr>`;
     return;
   }
 
   tbody.innerHTML = rows.map(r => {
     const color = deptColors[r['Отдел']] || '#999';
-    const isOut = r['Тип занятости'] === 'Аутсорс';
+    const isOut = (r['Тип занятости']||'').toLowerCase() === 'аутсорс';
     return `<tr>
-      <td><b>${r['Имя'] || '—'}</b></td>
+      <td><b>${fullName(r) || '—'}</b></td>
       <td><div class="td-dept"><span class="td-dot" style="background:${color}"></span>${r['Отдел'] || '—'}</div></td>
-      <td>${r['Подотдел'] || '—'}</td>
-      <td>${r['Должность/Роль'] || '—'}</td>
-      <td>${r['Руководитель'] || '—'}</td>
+      <td>${r['Должность'] || '—'}</td>
       <td>${isOut ? '<span class="node-badge badge-out">Аутсорс</span>' : (r['Тип занятости'] || '—')}</td>
+      <td>${r['форма сотрудничества'] || '—'}</td>
     </tr>`;
   }).join('');
 }
