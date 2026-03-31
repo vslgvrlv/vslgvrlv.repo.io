@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eclipse Auto — Meetings Dashboard</title>
+  <style>
+    @font-face {
+      font-family: 'Monaco';
+      src: url('../../assets/Monaco.otf') format('opentype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c12;
+      --bg-card: rgba(255,255,255,.03);
+      --border: rgba(255,255,255,.06);
+      --border-hover: rgba(255,255,255,.12);
+      --text: #e8f0ff;
+      --text-dim: #8aa0bc;
+      --text-muted: #4a6080;
+      --purple: #a78bfa;
+      --blue: #60a5fa;
+      --green: #4ade80;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 40px;
+    }
+    .header-back {
+      display: inline-block;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: .08em;
+      margin-bottom: 16px;
+      transition: color .2s;
+    }
+    .header-back:hover { color: var(--text-dim); }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .header .subtitle {
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+    .stat-card {
+      padding: 20px 16px;
+      border-radius: var(--radius);
+      background: linear-gradient(160deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.01) 100%);
+      border: 1px solid var(--border);
+      text-align: center;
+      transition: transform .2s, border-color .2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-hover);
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--text-dim) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-dim);
+    }
+
+    /* Tabs / filters */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,.03);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .04em;
+    }
+    .tab:hover { color: var(--text-dim); }
+    .tab.active {
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 32px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(180deg, var(--border) 0%, rgba(255,255,255,.02) 100%);
+      border-radius: 1px;
+    }
+    .timeline-month {
+      margin-bottom: 8px;
+    }
+    .timeline-month-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      margin-bottom: 12px;
+      margin-left: -32px;
+      padding-left: 32px;
+      position: relative;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -29px;
+      top: 14px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      z-index: 2;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .timeline-item:hover .timeline-dot {
+      transform: scale(1.3);
+    }
+    .timeline-dot.strategic { background: var(--purple); box-shadow: 0 0 12px rgba(167,139,250,.3); }
+    .timeline-dot.operational { background: var(--blue); box-shadow: 0 0 12px rgba(96,165,250,.3); }
+    .timeline-dot.confirmed { background: var(--green); box-shadow: 0 0 12px rgba(74,222,128,.3); }
+    .timeline-dot.rejected { background: var(--red); box-shadow: 0 0 12px rgba(248,113,113,.3); }
+
+    .timeline-item:hover .timeline-dot.strategic { box-shadow: 0 0 20px rgba(167,139,250,.5); }
+    .timeline-item:hover .timeline-dot.operational { box-shadow: 0 0 20px rgba(96,165,250,.5); }
+    .timeline-item:hover .timeline-dot.confirmed { box-shadow: 0 0 20px rgba(74,222,128,.5); }
+    .timeline-item:hover .timeline-dot.rejected { box-shadow: 0 0 20px rgba(248,113,113,.5); }
+
+    .timeline-card {
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      transition: border-color .2s, background .2s;
+    }
+    .timeline-item:hover .timeline-card {
+      border-color: var(--border-hover);
+      background: rgba(255,255,255,.045);
+    }
+    .timeline-date {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .timeline-text {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .timeline-meta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .timeline-badge {
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 600;
+    }
+    .badge-strategic { background: rgba(167,139,250,.15); color: var(--purple); }
+    .badge-operational { background: rgba(96,165,250,.15); color: var(--blue); }
+    .badge-confirmed { background: rgba(74,222,128,.15); color: var(--green); }
+    .badge-rejected { background: rgba(248,113,113,.15); color: var(--red); }
+
+    .timeline-who {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .timeline-context {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease, margin .3s ease, opacity .3s ease;
+      opacity: 0;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+    .timeline-item.expanded .timeline-context {
+      max-height: 200px;
+      margin-top: 10px;
+      opacity: 1;
+    }
+
+    /* Meetings table */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead th {
+      text-align: left;
+      padding: 12px 14px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: color .2s;
+    }
+    thead th:hover { color: var(--text-dim); }
+    thead th .sort-arrow { margin-left: 4px; font-size: 8px; }
+    tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,.03);
+      transition: background .15s;
+    }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody td {
+      padding: 10px 14px;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    tbody td:nth-child(3) { white-space: normal; }
+    tbody td a {
+      color: var(--blue);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    tbody td a:hover { color: var(--purple); text-decoration: underline; }
+
+    /* Filter dropdown */
+    .filter-select {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a6080'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .filter-select:focus { outline: none; border-color: var(--blue); }
+    .filter-select option { background: #0d1117; color: var(--text); }
+
+    /* Tasks */
+    .tasks-group {
+      margin-bottom: 24px;
+    }
+    .tasks-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .tasks-group-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .tasks-group-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 600;
+    }
+    .task-card {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      transition: border-color .2s;
+    }
+    .task-card:hover { border-color: var(--border-hover); }
+    .task-text {
+      font-size: 12px;
+      line-height: 1.5;
+      flex: 1;
+    }
+    .task-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .task-owner {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .task-source {
+      font-size: 9px;
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.04);
+      white-space: nowrap;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .stats-bar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .stat-value { font-size: 22px; }
+      .page { padding: 24px 16px 60px; }
+      .header h1 { font-size: 20px; }
+      .section-header { flex-direction: column; align-items: flex-start; }
+      table { font-size: 11px; }
+      tbody td, thead th { padding: 8px 10px; }
+    }
+    @media (max-width: 480px) {
+      .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .timeline { padding-left: 24px; }
+      .timeline-dot { left: -21px; width: 10px; height: 10px; }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in {
+      animation: fadeIn .4s ease both;
+    }
+    .animate-in:nth-child(1) { animation-delay: .05s; }
+    .animate-in:nth-child(2) { animation-delay: .1s; }
+    .animate-in:nth-child(3) { animation-delay: .15s; }
+    .animate-in:nth-child(4) { animation-delay: .2s; }
+    .animate-in:nth-child(5) { animation-delay: .25s; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <a class="header-back" href="../../">&larr; vslgvrlv / eclipse-auto</a>
+      <h1>Meetings Dashboard</h1>
+      <p class="subtitle">Eclipse Auto -- 35 встреч, ноябрь 2025 -- март 2026</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <!-- Decisions Timeline -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Хронология решений</div>
+        <div class="tabs" id="decision-tabs"></div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Стратегическое</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Операционное</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Подтверждено</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Отклонено</div>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <!-- Meetings List -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Встречи</div>
+        <select class="filter-select" id="participant-filter">
+          <option value="all">Все участники</option>
+        </select>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="date">Дата <span class="sort-arrow">&#9662;</span></th>
+              <th data-sort="duration">Мин <span class="sort-arrow"></span></th>
+              <th data-sort="participants">Участники <span class="sort-arrow"></span></th>
+              <th>Файл</th>
+            </tr>
+          </thead>
+          <tbody id="meetings-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Задачи из встреч</div>
+      </div>
+      <div id="tasks-container"></div>
+    </div>
+
+  </div>
+
+<script>
+// ============== DATA ==============
+
+const stats = [
+  { value: '35', label: 'Встречи' },
+  { value: '20.5', label: 'Часы' },
+  { value: '150K', label: 'Слова' },
+  { value: '28', label: 'Решения' },
+  { value: '22', label: 'Задачи' },
+];
+
+const decisions = [
+  { date: '2026-01-13', month: 'jan', text: 'Бюджет на рекламу: до 200K/мес в январе, 400-500K в феврале', type: 'strategic', who: 'Василий', context: 'Постепенное наращивание рекламного бюджета для тестирования каналов перед масштабированием.' },
+  { date: '2026-01-19', month: 'jan', text: 'Тестируем две цены: 24,990 и 26,990 на двух сайтах', type: 'operational', who: 'Василий, Антон', context: 'A/B тест ценовых предложений для определения оптимальной конверсии и маржинальности.' },
+  { date: '2026-01-20', month: 'jan', text: 'Целевая стоимость квал-лида: 3300-4000 руб', type: 'strategic', who: 'Василий, Илья', context: 'Установка KPI по стоимости лида на основе текущей экономики и планируемой конверсии.' },
+  { date: '2026-01-20', month: 'jan', text: 'Бизнес-модель: маркетплейс-агрегатор оклейки (B2B2C)', type: 'strategic', who: 'Василий', context: 'Стратегический выбор модели: платформа, соединяющая клиентов с мастерами-партнёрами.' },
+  { date: '2026-01-20', month: 'jan', text: 'Запуск регионов: начинаем с Краснодара', type: 'operational', who: 'Василий, Илья', context: 'Краснодар выбран как первый тестовый регион для масштабирования за пределы Москвы.' },
+  { date: '2026-01-23', month: 'jan', text: 'Идём к Ивану Ивановичу с заходом через ВТБ', type: 'operational', who: 'Василий, Денис', context: 'Стратегия выхода на крупного потенциального партнёра через банковские контакты.' },
+
+  { date: '2026-02-02', month: 'feb', text: 'Пополнять Директ чем больше, тем лучше', type: 'operational', who: 'Илья, Антон', context: 'Агрессивное наращивание рекламных расходов при положительной unit-экономике.' },
+  { date: '2026-02-03', month: 'feb', text: 'Озон: регистрируемся в категории Услуги (11%)', type: 'operational', who: 'Василий, Антон', context: 'Тест Ozon как канала продаж услуг оклейки с минимальной комиссией.' },
+  { date: '2026-02-05', month: 'feb', text: 'Не пушить B2B2C пока нет массы в B2C', type: 'strategic', who: 'Василий', context: 'Фокус на прямых клиентах перед запуском партнёрской сети — нужна критическая масса заказов.' },
+  { date: '2026-02-05', month: 'feb', text: 'Сайт защитаотсколов.рф: пересобрать самим', type: 'operational', who: 'Василий', context: 'Отказ от аутсорса — собственный контроль над конверсией и контентом сайта.' },
+  { date: '2026-02-05', month: 'feb', text: 'Комиссионная модель: 10-12% с партнёра', type: 'strategic', who: 'Василий, Антон', context: 'Финальная ставка комиссии для работы с мастерами-партнёрами в маркетплейс-модели.' },
+  { date: '2026-02-11', month: 'feb', text: 'Ультиматум по рекламе: 2 недели на результат', type: 'confirmed', who: 'Василий', context: 'Дедлайн для текущего маркетолога — показать результаты или замена.' },
+  { date: '2026-02-12', month: 'feb', text: 'Искать партнёров-ремесленников вместо студий', type: 'strategic', who: 'Антон, Денис', context: 'Shift к индивидуальным мастерам: ниже порог входа, выше мотивация, лучше юнит-экономика.' },
+  { date: '2026-02-16', month: 'feb', text: 'Подключаем второго маркетолога (Хордин)', type: 'confirmed', who: 'Василий', context: 'Усиление маркетинга: параллельное тестирование каналов двумя специалистами.' },
+  { date: '2026-02-16', month: 'feb', text: 'Внедрение RNP-таблицы для управления маркетингом', type: 'operational', who: 'Василий, Денис', context: 'Структурированный подход к отслеживанию каналов, бюджетов и результатов маркетинга.' },
+  { date: '2026-02-26', month: 'feb', text: 'Готовы подвинуться +2000 к партнёру', type: 'operational', who: 'Василий', context: 'Гибкость по ценообразованию для привлечения ключевого партнёра.' },
+
+  { date: '2026-03-03', month: 'mar', text: 'Наценка 40% — много; масс-маркет сначала', type: 'confirmed', who: 'Василий', context: 'Корректировка ценовой стратегии: снижение маржи для набора объёма и клиентской базы.' },
+  { date: '2026-03-16', month: 'mar', text: 'Тестировать рекламу на Авито', type: 'operational', who: 'Хордин', context: 'Диверсификация каналов: Авито как дополнительный источник лидов с низкой стоимостью.' },
+  { date: '2026-03-23', month: 'mar', text: 'Запуск Уфы (лиды по 280 руб)', type: 'operational', who: 'Хордин, Василий', context: 'Экспансия в Уфу — отличная стоимость лида, быстрый тест рынка.' },
+  { date: '2026-03-23', month: 'mar', text: 'Предоплата от клиентов + скидка за быструю оплату', type: 'strategic', who: 'Василий, Денис', context: 'Улучшение cash flow: предоплата снижает риски, скидка стимулирует быструю оплату.' },
+  { date: '2026-03-23', month: 'mar', text: 'Деньги на кабинетах — минимум на 2 недели', type: 'confirmed', who: 'Хордин, Илья', context: 'Обеспечение непрерывности рекламных кампаний: страховой запас бюджета.' },
+  { date: '2026-03-30', month: 'mar', text: 'Доп.услуги в прайс: только тонировка, керамика, защита лобового', type: 'confirmed', who: 'Василий, Денис, Антон', context: 'Фокусировка ассортимента: только услуги с высокой маржой и спросом.' },
+  { date: '2026-03-30', month: 'mar', text: 'Наценка на доп.услуги 30-50%, не 10%', type: 'operational', who: 'Антон, Денис', context: 'Пересмотр наценки на дополнительные услуги для улучшения рентабельности.' },
+  { date: '2026-03-30', month: 'mar', text: 'С Сифулиным не работаем. Заявление в полицию', type: 'rejected', who: 'Василий, Антон, Денис', context: 'Прекращение сотрудничества с недобросовестным партнёром, юридические меры.' },
+  { date: '2026-03-30', month: 'mar', text: 'Нужен найм продажника + регламент', type: 'confirmed', who: 'Василий, Денис, Антон', context: 'Масштабирование продаж: выделенный сотрудник со стандартизированным процессом.' },
+];
+
+const meetings = [
+  { date: '2025-11-06', duration: 43, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_06_0805_zoom_43min.md' },
+  { date: '2025-11-09', duration: 23, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_09_1101_zoom_23min.md' },
+  { date: '2025-11-10', duration: 30, participants: 'Василий, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_10_0852_zoom_30min.md' },
+  { date: '2025-11-17', duration: 43, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_17_1200_zoom_43min.md' },
+  { date: '2025-11-18', duration: 30, participants: 'Василий, Денис, Екатерина, Ирина Дроздова', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_18_1229_zoom_30min.md' },
+  { date: '2025-11-20', duration: 18, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_20_0730_zoom_18min.md' },
+  { date: '2025-11-20', duration: 14, participants: 'Василий, Тимур Самойлов', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_20_1300_zoom_14min.md' },
+  { date: '2025-11-21', duration: 17, participants: 'Василий, Евгений Фатьянов', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_21_0830_zoom_17min.md' },
+  { date: '2025-11-26', duration: 47, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_26_1401_zoom_47min.md' },
+  { date: '2025-11-28', duration: 43, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_11_28_0901_zoom_43min.md' },
+  { date: '2025-12-03', duration: 9, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2025_12_03_1156_zoom_9min.md' },
+  { date: '2026-01-13', duration: 8, participants: 'Василий, Антон, Илья Клин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_13_0837_zoom_8min.md' },
+  { date: '2026-01-19', duration: 15, participants: 'Василий, Антон, Илья Клин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_19_0640_zoom_15min.md' },
+  { date: '2026-01-20', duration: 32, participants: 'Василий, Илья Клин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_20_1202_zoom_32min.md' },
+  { date: '2026-01-23', duration: 21, participants: 'Василий, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_23_1011_zoom_21min.md' },
+  { date: '2026-02-02', duration: 27, participants: 'Василий, Антон, Илья Клин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_02_1434_zoom_27min.md' },
+  { date: '2026-02-03', duration: 13, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_03_1035_zoom_13min.md' },
+  { date: '2026-02-05', duration: 50, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_05_1201_zoom_50min.md' },
+  { date: '2026-02-11', duration: 17, participants: 'Василий, Антон, Илья Клин, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_11_0708_zoom_17min.md' },
+  { date: '2026-02-12', duration: 50, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_12_1203_zoom_50min.md' },
+  { date: '2026-02-16', duration: 28, participants: 'Василий, Антон, Илья Клин, Дмитрий Хордин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_16_1304_zoom_28min.md' },
+  { date: '2026-02-24', duration: 25, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_24_1338_zoom_25min.md' },
+  { date: '2026-02-26', duration: 40, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_26_0904_zoom_40min.md' },
+  { date: '2026-03-03', duration: 30, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_03_0912_zoom_30min.md' },
+  { date: '2026-03-12', duration: 17, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_12_1059_zoom_17min.md' },
+  { date: '2026-03-16', duration: 40, participants: 'Василий, Илья Клин, Дмитрий Хордин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_16_1104_zoom_40min.md' },
+  { date: '2026-03-16', duration: 45, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_16_1203_zoom_45min.md' },
+  { date: '2026-03-19', duration: 71, participants: 'Василий, Денис, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_19_1216_zoom_71min.md' },
+  { date: '2026-03-23', duration: 51, participants: 'Василий, Илья Клин, Дмитрий Хордин, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_23_1106_zoom_51min.md' },
+  { date: '2026-03-23', duration: 20, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_23_1200_zoom_20min.md' },
+  { date: '2026-03-25', duration: 54, participants: 'Василий, Антон', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_25_1203_zoom_54min.md' },
+  { date: '2026-03-26', duration: 28, participants: 'Василий, Илья Клин, Дмитрий Хордин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_26_1106_zoom_28min.md' },
+  { date: '2026-03-30', duration: 7, participants: 'Василий, Илья Клин, Дмитрий Хордин', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_1106_zoom_7min.md' },
+  { date: '2026-03-30', duration: 60, participants: 'Василий, Антон, Денис', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_1202_zoom_60min.md' },
+  { date: '2026-03-30', duration: 31, participants: 'Василий, Денис, Дмитрий Ряховский', path: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_gdrive_zoom_31min.md' },
+];
+
+const tasks = [
+  { text: 'Запустить рекламу на Авито в Москве и Краснодаре', priority: 'urgent', owner: 'Хордин', source: '16.03' },
+  { text: 'Подготовить заявление в полицию по Сифулину', priority: 'urgent', owner: 'Денис', source: '30.03' },
+  { text: 'Найм продажника: написать вакансию и регламент', priority: 'urgent', owner: 'Денис, Антон', source: '30.03' },
+  { text: 'Обеспечить запас на рекламных кабинетах на 2 недели', priority: 'urgent', owner: 'Илья, Хордин', source: '23.03' },
+  { text: 'Пересобрать сайт защитаотсколов.рф', priority: 'high', owner: 'Василий', source: '05.02' },
+  { text: 'Внедрить предоплату + скидку за быструю оплату', priority: 'high', owner: 'Денис', source: '23.03' },
+  { text: 'Добавить тонировку, керамику, защиту лобового в прайс', priority: 'high', owner: 'Антон', source: '30.03' },
+  { text: 'Пересмотреть наценку на доп.услуги до 30-50%', priority: 'high', owner: 'Антон, Денис', source: '30.03' },
+  { text: 'Внедрить RNP-таблицу для маркетинга', priority: 'high', owner: 'Василий, Денис', source: '16.02' },
+  { text: 'Регистрация на Ozon в категории Услуги', priority: 'high', owner: 'Антон', source: '03.02' },
+  { text: 'Запуск Уфы: найти партнёров и настроить рекламу', priority: 'high', owner: 'Хордин', source: '23.03' },
+  { text: 'Искать партнёров-ремесленников (не студии)', priority: 'medium', owner: 'Антон, Денис', source: '12.02' },
+  { text: 'Наценка 40% -- снизить для масс-маркета', priority: 'medium', owner: 'Василий', source: '03.03' },
+  { text: 'Подготовить заход к Ивану Ивановичу через ВТБ', priority: 'medium', owner: 'Василий, Денис', source: '23.01' },
+  { text: 'A/B тест цен: 24990 vs 26990 на двух сайтах', priority: 'medium', owner: 'Антон', source: '19.01' },
+  { text: 'Запуск Краснодара: подготовить рекламную кампанию', priority: 'medium', owner: 'Илья', source: '20.01' },
+  { text: 'Комиссионная модель 10-12%: зафиксировать в договоре', priority: 'medium', owner: 'Василий, Антон', source: '05.02' },
+  { text: 'Подключение Хордина: передать доступы, поставить задачи', priority: 'medium', owner: 'Василий', source: '16.02' },
+  { text: 'Переговоры с партнёром: подвинуться +2000', priority: 'medium', owner: 'Василий', source: '26.02' },
+  { text: 'Наращивать бюджет Директа при положительной экономике', priority: 'medium', owner: 'Илья, Антон', source: '02.02' },
+  { text: 'Рекламный бюджет: до 200K янв, 400-500K фев', priority: 'medium', owner: 'Василий', source: '13.01' },
+  { text: 'Не пушить B2B2C до набора массы в B2C', priority: 'medium', owner: 'Василий', source: '05.02' },
+];
+
+const GITHUB_BASE = 'https://github.com/vslgvrlv/vault-private/blob/main/';
+
+// ============== RENDER ==============
+
+function formatDate(d) {
+  const [y, m, day] = d.split('-');
+  const months = ['', 'янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  return `${parseInt(day)} ${months[parseInt(m)]} ${y}`;
+}
+
+// Stats
+function renderStats() {
+  const el = document.getElementById('stats-bar');
+  el.innerHTML = stats.map((s, i) =>
+    `<div class="stat-card animate-in" style="animation-delay:${i * .06}s">
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>`
+  ).join('');
+}
+
+// Decision tabs
+let activeMonth = 'all';
+function renderDecisionTabs() {
+  const tabs = [
+    { id: 'all', label: 'Все' },
+    { id: 'jan', label: 'Янв' },
+    { id: 'feb', label: 'Фев' },
+    { id: 'mar', label: 'Мар' },
+  ];
+  const el = document.getElementById('decision-tabs');
+  el.innerHTML = tabs.map(t =>
+    `<button class="tab${activeMonth === t.id ? ' active' : ''}" data-month="${t.id}">${t.label}</button>`
+  ).join('');
+  el.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeMonth = btn.dataset.month;
+      renderDecisionTabs();
+      renderTimeline();
+    });
+  });
+}
+
+// Timeline
+function renderTimeline() {
+  const el = document.getElementById('timeline');
+  const filtered = activeMonth === 'all' ? decisions : decisions.filter(d => d.month === activeMonth);
+
+  let html = '';
+  let lastMonth = '';
+  const monthNames = { jan: 'Январь 2026', feb: 'Февраль 2026', mar: 'Март 2026' };
+
+  filtered.forEach((d, i) => {
+    if (d.month !== lastMonth) {
+      html += `<div class="timeline-month-label">${monthNames[d.month]}</div>`;
+      lastMonth = d.month;
+    }
+    html += `
+      <div class="timeline-item" onclick="this.classList.toggle('expanded')" style="animation: fadeIn .35s ease ${i * .04}s both;">
+        <div class="timeline-dot ${d.type}"></div>
+        <div class="timeline-card">
+          <div class="timeline-date">${formatDate(d.date)}</div>
+          <div class="timeline-text">${d.text}</div>
+          <div class="timeline-meta">
+            <span class="timeline-badge badge-${d.type}">${d.type}</span>
+            <span class="timeline-who">${d.who}</span>
+          </div>
+          <div class="timeline-context">${d.context}</div>
+        </div>
+      </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// Meetings table
+let sortKey = 'date';
+let sortAsc = false;
+let participantFilter = 'all';
+
+function getAllParticipants() {
+  const set = new Set();
+  meetings.forEach(m => m.participants.split(', ').forEach(p => set.add(p.trim())));
+  return Array.from(set).sort();
+}
+
+function renderParticipantFilter() {
+  const el = document.getElementById('participant-filter');
+  const people = getAllParticipants();
+  el.innerHTML = '<option value="all">Все участники</option>' +
+    people.map(p => `<option value="${p}"${participantFilter === p ? ' selected' : ''}>${p}</option>`).join('');
+  el.addEventListener('change', () => {
+    participantFilter = el.value;
+    renderMeetings();
+  });
+}
+
+function renderMeetings() {
+  let data = [...meetings];
+  if (participantFilter !== 'all') {
+    data = data.filter(m => m.participants.includes(participantFilter));
+  }
+  data.sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'duration') { va = +va; vb = +vb; }
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
+  const tbody = document.getElementById('meetings-body');
+  tbody.innerHTML = data.map(m => {
+    const url = GITHUB_BASE + encodeURI(m.path);
+    const fname = m.path.split('/').pop().replace('.md', '');
+    return `<tr>
+      <td>${formatDate(m.date)}</td>
+      <td>${m.duration}</td>
+      <td>${m.participants}</td>
+      <td><a href="${url}" target="_blank" rel="noopener">${fname}</a></td>
+    </tr>`;
+  }).join('');
+
+  // Update sort arrows
+  document.querySelectorAll('thead th').forEach(th => {
+    const key = th.dataset.sort;
+    const arrow = th.querySelector('.sort-arrow');
+    if (!arrow) return;
+    if (key === sortKey) {
+      arrow.textContent = sortAsc ? '\u25B4' : '\u25BE';
+    } else {
+      arrow.textContent = '';
+    }
+  });
+}
+
+document.querySelectorAll('thead th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (sortKey === key) { sortAsc = !sortAsc; }
+    else { sortKey = key; sortAsc = true; }
+    renderMeetings();
+  });
+});
+
+// Tasks
+function renderTasks() {
+  const groups = [
+    { id: 'urgent', label: 'Срочные', color: 'var(--red)' },
+    { id: 'high', label: 'Высокий приоритет', color: 'var(--orange)' },
+    { id: 'medium', label: 'Средний приоритет', color: 'var(--blue)' },
+  ];
+  const el = document.getElementById('tasks-container');
+  el.innerHTML = groups.map(g => {
+    const items = tasks.filter(t => t.priority === g.id);
+    if (!items.length) return '';
+    return `
+      <div class="tasks-group">
+        <div class="tasks-group-header">
+          <div class="tasks-group-dot" style="background:${g.color}"></div>
+          <div class="tasks-group-label" style="color:${g.color}">${g.label} (${items.length})</div>
+        </div>
+        ${items.map(t => `
+          <div class="task-card">
+            <div class="task-text">${t.text}</div>
+            <div class="task-meta">
+              <span class="task-owner">${t.owner}</span>
+              <span class="task-source">${t.source}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+}
+
+// Init
+renderStats();
+renderDecisionTabs();
+renderTimeline();
+renderParticipantFilter();
+renderMeetings();
+renderTasks();
+</script>
+</body>
+</html>
