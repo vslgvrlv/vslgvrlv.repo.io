@@ -472,14 +472,15 @@
       <div class="timeline" id="timeline"></div>
     </div>
 
-    <!-- Meetings List -->
+    <!-- Meetings List (collapsible) -->
     <div class="section">
-      <div class="section-header">
-        <div class="section-title">Встречи</div>
+      <div class="section-header" style="cursor:pointer" onclick="document.getElementById('meetings-content').style.display = document.getElementById('meetings-content').style.display === 'none' ? 'block' : 'none'; this.querySelector('.toggle').textContent = document.getElementById('meetings-content').style.display === 'none' ? '+ показать' : '− скрыть'">
+        <div class="section-title">Встречи <span class="toggle" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:8px">+ показать</span></div>
         <select class="filter-select" id="participant-filter">
           <option value="all">Все участники</option>
         </select>
       </div>
+      <div id="meetings-content" style="display:none">
       <div class="table-wrapper">
         <table>
           <thead>
@@ -492,6 +493,7 @@
           </thead>
           <tbody id="meetings-body"></tbody>
         </table>
+      </div>
       </div>
     </div>
 
@@ -517,33 +519,33 @@ const stats = [
 ];
 
 const decisions = [
-  { date: '2026-01-13', month: 'jan', text: 'Бюджет на рекламу: до 200K/мес в январе, 400-500K в феврале', type: 'strategic', who: 'Василий', context: 'Постепенное наращивание рекламного бюджета для тестирования каналов перед масштабированием.' },
-  { date: '2026-01-19', month: 'jan', text: 'Тестируем две цены: 24,990 и 26,990 на двух сайтах', type: 'operational', who: 'Василий, Антон', context: 'A/B тест ценовых предложений для определения оптимальной конверсии и маржинальности.' },
-  { date: '2026-01-20', month: 'jan', text: 'Целевая стоимость квал-лида: 3300-4000 руб', type: 'strategic', who: 'Василий, Илья', context: 'Установка KPI по стоимости лида на основе текущей экономики и планируемой конверсии.' },
-  { date: '2026-01-20', month: 'jan', text: 'Бизнес-модель: маркетплейс-агрегатор оклейки (B2B2C)', type: 'strategic', who: 'Василий', context: 'Стратегический выбор модели: платформа, соединяющая клиентов с мастерами-партнёрами.' },
-  { date: '2026-01-20', month: 'jan', text: 'Запуск регионов: начинаем с Краснодара', type: 'operational', who: 'Василий, Илья', context: 'Краснодар выбран как первый тестовый регион для масштабирования за пределы Москвы.' },
-  { date: '2026-01-23', month: 'jan', text: 'Идём к Ивану Ивановичу с заходом через ВТБ', type: 'operational', who: 'Василий, Денис', context: 'Стратегия выхода на крупного потенциального партнёра через банковские контакты.' },
+  { date: '2026-01-13', month: 'jan', text: 'Бюджет на рекламу: до 200K/мес в январе, 400-500K в феврале', type: 'strategic', who: 'Василий', context: 'Постепенное наращивание рекламного бюджета для тестирования каналов перед масштабированием.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_13_0837_zoom_8min.md' },
+  { date: '2026-01-19', month: 'jan', text: 'Тестируем две цены: 24,990 и 26,990 на двух сайтах', type: 'operational', who: 'Василий, Антон', context: 'A/B тест ценовых предложений для определения оптимальной конверсии и маржинальности.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_19_0640_zoom_15min.md' },
+  { date: '2026-01-20', month: 'jan', text: 'Целевая стоимость квал-лида: 3300-4000 руб', type: 'strategic', who: 'Василий, Илья', context: 'Установка KPI по стоимости лида на основе текущей экономики и планируемой конверсии.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_20_1202_zoom_32min.md' },
+  { date: '2026-01-20', month: 'jan', text: 'Бизнес-модель: маркетплейс-агрегатор оклейки (B2B2C)', type: 'strategic', who: 'Василий', context: 'Стратегический выбор модели: платформа, соединяющая клиентов с мастерами-партнёрами.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_20_1202_zoom_32min.md' },
+  { date: '2026-01-20', month: 'jan', text: 'Запуск регионов: начинаем с Краснодара', type: 'operational', who: 'Василий, Илья', context: 'Краснодар выбран как первый тестовый регион для масштабирования за пределы Москвы.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_20_1202_zoom_32min.md' },
+  { date: '2026-01-23', month: 'jan', text: 'Идём к Ивану Ивановичу с заходом через ВТБ', type: 'operational', who: 'Василий, Денис', context: 'Стратегия выхода на крупного потенциального партнёра через банковские контакты.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_01_23_1011_zoom_21min.md' },
 
-  { date: '2026-02-02', month: 'feb', text: 'Пополнять Директ чем больше, тем лучше', type: 'operational', who: 'Илья, Антон', context: 'Агрессивное наращивание рекламных расходов при положительной unit-экономике.' },
-  { date: '2026-02-03', month: 'feb', text: 'Озон: регистрируемся в категории Услуги (11%)', type: 'operational', who: 'Василий, Антон', context: 'Тест Ozon как канала продаж услуг оклейки с минимальной комиссией.' },
-  { date: '2026-02-05', month: 'feb', text: 'Не пушить B2B2C пока нет массы в B2C', type: 'strategic', who: 'Василий', context: 'Фокус на прямых клиентах перед запуском партнёрской сети — нужна критическая масса заказов.' },
-  { date: '2026-02-05', month: 'feb', text: 'Сайт защитаотсколов.рф: пересобрать самим', type: 'operational', who: 'Василий', context: 'Отказ от аутсорса — собственный контроль над конверсией и контентом сайта.' },
-  { date: '2026-02-05', month: 'feb', text: 'Комиссионная модель: 10-12% с партнёра', type: 'strategic', who: 'Василий, Антон', context: 'Финальная ставка комиссии для работы с мастерами-партнёрами в маркетплейс-модели.' },
-  { date: '2026-02-11', month: 'feb', text: 'Ультиматум по рекламе: 2 недели на результат', type: 'confirmed', who: 'Василий', context: 'Дедлайн для текущего маркетолога — показать результаты или замена.' },
-  { date: '2026-02-12', month: 'feb', text: 'Искать партнёров-ремесленников вместо студий', type: 'strategic', who: 'Антон, Денис', context: 'Shift к индивидуальным мастерам: ниже порог входа, выше мотивация, лучше юнит-экономика.' },
-  { date: '2026-02-16', month: 'feb', text: 'Подключаем второго маркетолога (Хордин)', type: 'confirmed', who: 'Василий', context: 'Усиление маркетинга: параллельное тестирование каналов двумя специалистами.' },
-  { date: '2026-02-16', month: 'feb', text: 'Внедрение RNP-таблицы для управления маркетингом', type: 'operational', who: 'Василий, Денис', context: 'Структурированный подход к отслеживанию каналов, бюджетов и результатов маркетинга.' },
-  { date: '2026-02-26', month: 'feb', text: 'Готовы подвинуться +2000 к партнёру', type: 'operational', who: 'Василий', context: 'Гибкость по ценообразованию для привлечения ключевого партнёра.' },
+  { date: '2026-02-02', month: 'feb', text: 'Пополнять Директ чем больше, тем лучше', type: 'operational', who: 'Илья, Антон', context: 'Агрессивное наращивание рекламных расходов при положительной unit-экономике.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_02_1434_zoom_27min.md' },
+  { date: '2026-02-03', month: 'feb', text: 'Озон: регистрируемся в категории Услуги (11%)', type: 'operational', who: 'Василий, Антон', context: 'Тест Ozon как канала продаж услуг оклейки с минимальной комиссией.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_03_1035_zoom_13min.md' },
+  { date: '2026-02-05', month: 'feb', text: 'Не пушить B2B2C пока нет массы в B2C', type: 'strategic', who: 'Василий', context: 'Фокус на прямых клиентах перед запуском партнёрской сети — нужна критическая масса заказов.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_05_1201_zoom_50min.md' },
+  { date: '2026-02-05', month: 'feb', text: 'Сайт защитаотсколов.рф: пересобрать самим', type: 'operational', who: 'Василий', context: 'Отказ от аутсорса — собственный контроль над конверсией и контентом сайта.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_05_1201_zoom_50min.md' },
+  { date: '2026-02-05', month: 'feb', text: 'Комиссионная модель: 10-12% с партнёра', type: 'strategic', who: 'Василий, Антон', context: 'Финальная ставка комиссии для работы с мастерами-партнёрами в маркетплейс-модели.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_05_1201_zoom_50min.md' },
+  { date: '2026-02-11', month: 'feb', text: 'Ультиматум по рекламе: 2 недели на результат', type: 'confirmed', who: 'Василий', context: 'Дедлайн для текущего маркетолога — показать результаты или замена.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_11_0708_zoom_17min.md' },
+  { date: '2026-02-12', month: 'feb', text: 'Искать партнёров-ремесленников вместо студий', type: 'strategic', who: 'Антон, Денис', context: 'Shift к индивидуальным мастерам: ниже порог входа, выше мотивация, лучше юнит-экономика.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_12_1203_zoom_50min.md' },
+  { date: '2026-02-16', month: 'feb', text: 'Подключаем второго маркетолога (Хордин)', type: 'confirmed', who: 'Василий', context: 'Усиление маркетинга: параллельное тестирование каналов двумя специалистами.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_16_1304_zoom_28min.md' },
+  { date: '2026-02-16', month: 'feb', text: 'Внедрение RNP-таблицы для управления маркетингом', type: 'operational', who: 'Василий, Денис', context: 'Структурированный подход к отслеживанию каналов, бюджетов и результатов маркетинга.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_16_1304_zoom_28min.md' },
+  { date: '2026-02-26', month: 'feb', text: 'Готовы подвинуться +2000 к партнёру', type: 'operational', who: 'Василий', context: 'Гибкость по ценообразованию для привлечения ключевого партнёра.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_02_26_0904_zoom_40min.md' },
 
-  { date: '2026-03-03', month: 'mar', text: 'Наценка 40% — много; масс-маркет сначала', type: 'confirmed', who: 'Василий', context: 'Корректировка ценовой стратегии: снижение маржи для набора объёма и клиентской базы.' },
-  { date: '2026-03-16', month: 'mar', text: 'Тестировать рекламу на Авито', type: 'operational', who: 'Хордин', context: 'Диверсификация каналов: Авито как дополнительный источник лидов с низкой стоимостью.' },
-  { date: '2026-03-23', month: 'mar', text: 'Запуск Уфы (лиды по 280 руб)', type: 'operational', who: 'Хордин, Василий', context: 'Экспансия в Уфу — отличная стоимость лида, быстрый тест рынка.' },
-  { date: '2026-03-23', month: 'mar', text: 'Предоплата от клиентов + скидка за быструю оплату', type: 'strategic', who: 'Василий, Денис', context: 'Улучшение cash flow: предоплата снижает риски, скидка стимулирует быструю оплату.' },
-  { date: '2026-03-23', month: 'mar', text: 'Деньги на кабинетах — минимум на 2 недели', type: 'confirmed', who: 'Хордин, Илья', context: 'Обеспечение непрерывности рекламных кампаний: страховой запас бюджета.' },
-  { date: '2026-03-30', month: 'mar', text: 'Доп.услуги в прайс: только тонировка, керамика, защита лобового', type: 'confirmed', who: 'Василий, Денис, Антон', context: 'Фокусировка ассортимента: только услуги с высокой маржой и спросом.' },
-  { date: '2026-03-30', month: 'mar', text: 'Наценка на доп.услуги 30-50%, не 10%', type: 'operational', who: 'Антон, Денис', context: 'Пересмотр наценки на дополнительные услуги для улучшения рентабельности.' },
-  { date: '2026-03-30', month: 'mar', text: 'С Сифулиным не работаем. Заявление в полицию', type: 'rejected', who: 'Василий, Антон, Денис', context: 'Прекращение сотрудничества с недобросовестным партнёром, юридические меры.' },
-  { date: '2026-03-30', month: 'mar', text: 'Нужен найм продажника + регламент', type: 'confirmed', who: 'Василий, Денис, Антон', context: 'Масштабирование продаж: выделенный сотрудник со стандартизированным процессом.' },
+  { date: '2026-03-03', month: 'mar', text: 'Наценка 40% — много; масс-маркет сначала', type: 'confirmed', who: 'Василий', context: 'Корректировка ценовой стратегии: снижение маржи для набора объёма и клиентской базы.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_03_0912_zoom_30min.md' },
+  { date: '2026-03-16', month: 'mar', text: 'Тестировать рекламу на Авито', type: 'operational', who: 'Хордин', context: 'Диверсификация каналов: Авито как дополнительный источник лидов с низкой стоимостью.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_16_1104_zoom_40min.md' },
+  { date: '2026-03-23', month: 'mar', text: 'Запуск Уфы (лиды по 280 руб)', type: 'operational', who: 'Хордин, Василий', context: 'Экспансия в Уфу — отличная стоимость лида, быстрый тест рынка.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_23_1106_zoom_51min.md' },
+  { date: '2026-03-23', month: 'mar', text: 'Предоплата от клиентов + скидка за быструю оплату', type: 'strategic', who: 'Василий, Денис', context: 'Улучшение cash flow: предоплата снижает риски, скидка стимулирует быструю оплату.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_23_1200_zoom_20min.md' },
+  { date: '2026-03-23', month: 'mar', text: 'Деньги на кабинетах — минимум на 2 недели', type: 'confirmed', who: 'Хордин, Илья', context: 'Обеспечение непрерывности рекламных кампаний: страховой запас бюджета.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_23_1106_zoom_51min.md' },
+  { date: '2026-03-30', month: 'mar', text: 'Доп.услуги в прайс: только тонировка, керамика, защита лобового', type: 'confirmed', who: 'Василий, Денис, Антон', context: 'Фокусировка ассортимента: только услуги с высокой маржой и спросом.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_1202_zoom_60min.md' },
+  { date: '2026-03-30', month: 'mar', text: 'Наценка на доп.услуги 30-50%, не 10%', type: 'operational', who: 'Антон, Денис', context: 'Пересмотр наценки на дополнительные услуги для улучшения рентабельности.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_1202_zoom_60min.md' },
+  { date: '2026-03-30', month: 'mar', text: 'С Сифулиным не работаем. Заявление в полицию', type: 'rejected', who: 'Василий, Антон, Денис', context: 'Прекращение сотрудничества с недобросовестным партнёром, юридические меры.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_1202_zoom_60min.md' },
+  { date: '2026-03-30', month: 'mar', text: 'Нужен найм продажника + регламент', type: 'confirmed', who: 'Василий, Денис, Антон', context: 'Масштабирование продаж: выделенный сотрудник со стандартизированным процессом.', vault: '02_PROJECTS/Eclipce Auto/05_meetings/ea_meeting_2026_03_30_1202_zoom_60min.md' },
 ];
 
 const meetings = [
@@ -677,6 +679,7 @@ function renderTimeline() {
             <span class="timeline-who">${d.who}</span>
           </div>
           <div class="timeline-context">${d.context}</div>
+          ${d.vault ? `<a href="https://github.com/vslgvrlv/vault-private/blob/main/${d.vault}" target="_blank" style="display:inline-block;margin-top:8px;font-size:11px;color:var(--blue);text-decoration:none;opacity:.7;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">📄 Открыть контекст встречи →</a>` : ''}
         </div>
       </div>`;
   });
